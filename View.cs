@@ -79,8 +79,10 @@ namespace Vnc.Viewer
     private Conn conn = null;
 
     protected ConnOpts connOpts = null;
-    private UInt16 frameBufWidth = 0;
-    private UInt16 frameBufHeight = 0;
+    private UInt16 rawFBWidth = 0;
+    private UInt16 scaledFBWidth = 0;
+    private UInt16 rawFBHeight = 0;
+    private UInt16 scaledFBHeight = 0;
 
     protected int mouseX = 0;
     protected int mouseY = 0;
@@ -130,7 +132,7 @@ namespace Vnc.Viewer
 
     private void RealToFrameBufXY(ref UInt16 x, ref UInt16 y)
     {
-      RealToFrameBufXY(ref x, ref y, connOpts.ViewOpts.Orientation, frameBufWidth, frameBufHeight);
+      RealToFrameBufXY(ref x, ref y, connOpts.ViewOpts.Orientation, rawFBWidth, rawFBHeight);
     }
 
     private void RealToFrameBufRect(ref Rectangle rect)
@@ -140,16 +142,16 @@ namespace Vnc.Viewer
       {
         case Orientation.Landscape90:
           rect.X = tempRect.Y;
-          rect.Y = frameBufHeight - tempRect.X - tempRect.Width;
+          rect.Y = rawFBHeight - tempRect.X - tempRect.Width;
           rect.Width = tempRect.Height;
           rect.Height = tempRect.Width;
           break;
         case Orientation.Portrait180:
-          rect.X = frameBufWidth - tempRect.X - tempRect.Width;
-          rect.Y = frameBufHeight - tempRect.Y - tempRect.Height;
+          rect.X = rawFBWidth - tempRect.X - tempRect.Width;
+          rect.Y = rawFBHeight - tempRect.Y - tempRect.Height;
           break;
         case Orientation.Landscape270:
-          rect.X = frameBufWidth - tempRect.Y - tempRect.Height;
+          rect.X = rawFBWidth - tempRect.Y - tempRect.Height;
           rect.Y = tempRect.X;
           rect.Width = tempRect.Height;
           rect.Height = tempRect.Width;
@@ -170,15 +172,17 @@ namespace Vnc.Viewer
     private void RealToScrnRect(ref Rectangle rect)
     {
       RealToFrameBufRect(ref rect);
-      int x = rect.Left;
-      int y = rect.Top;
-      FrameBufToScrnXY(ref x, ref y);
-      rect.X = x;
-      rect.Y = y;
+      FrameBufToScrnRect(ref rect);
     }
 
     private void FrameBufToScrnXY(ref int x, ref int y)
     {
+      if(connOpts.ViewOpts.CliScaling != CliScaling.None)
+      {
+        x = (int)((float)x * (float)scaledFBWidth / (float)rawFBWidth);
+        y = (int)((float)y * (float)scaledFBHeight / (float)rawFBHeight);
+      }
+
       // Scrolling
       if(hScrlBar.Visible)
         x -= hScrlBar.Value;
@@ -190,22 +194,36 @@ namespace Vnc.Viewer
       y += viewable.Y;
     }
 
+    private void FrameBufToScrnRect(ref Rectangle rect)
+    {
+      int x = rect.Left;
+      int y = rect.Top;
+      FrameBufToScrnXY(ref x, ref y);
+      rect.X = x;
+      rect.Y = y;
+      if(connOpts.ViewOpts.CliScaling != CliScaling.None)
+      {
+        rect.Width = (int)((float)rect.Width * (float)scaledFBWidth / (float)rawFBWidth);
+        rect.Height = (int)((float)rect.Height * (float)scaledFBHeight / (float)rawFBHeight);
+      }
+    }
+
     private void FrameBufToRealXY(ref UInt16 x, ref UInt16 y)
     {
       UInt16 tempX = x;
       switch(connOpts.ViewOpts.Orientation)
       {
         case Orientation.Landscape90:
-          x = (UInt16)(frameBufHeight - 1 - y);
+          x = (UInt16)(rawFBHeight - 1 - y);
           y = tempX;
           break;
         case Orientation.Portrait180:
-          x = (UInt16)(frameBufWidth - 1 - x);
-          y = (UInt16)(frameBufHeight - 1 - y);
+          x = (UInt16)(rawFBWidth - 1 - x);
+          y = (UInt16)(rawFBHeight - 1 - y);
           break;
         case Orientation.Landscape270:
           x = y;
-          y = (UInt16)(frameBufWidth - 1 - tempX);
+          y = (UInt16)(rawFBWidth - 1 - tempX);
           break;
       }
     }
@@ -222,10 +240,30 @@ namespace Vnc.Viewer
       x -= viewable.X;
       y -= viewable.Y;
 
+      if(connOpts.ViewOpts.CliScaling != CliScaling.None)
+      {
+        x = (int)((float)x * (float)rawFBWidth / (float)scaledFBWidth);
+        y = (int)((float)y * (float)rawFBHeight / (float)scaledFBHeight);
+      }
+
       x = Math.Max(x, 0);
-      x = Math.Min(x, frameBufWidth - 1);
+      x = Math.Min(x, rawFBWidth - 1);
       y = Math.Max(y, 0);
-      y = Math.Min(y, frameBufHeight - 1);
+      y = Math.Min(y, rawFBHeight - 1);
+    }
+
+    private void ScrnToFrameBufRect(ref Rectangle rect)
+    {
+      int x = rect.Left;
+      int y = rect.Top;
+      ScrnToFrameBufXY(ref x, ref y);
+      rect.X = x;
+      rect.Y = y;
+      if(connOpts.ViewOpts.CliScaling != CliScaling.None)
+      {
+        rect.Width = (int)((float)rect.Width * (float)rawFBWidth / (float)scaledFBWidth);
+        rect.Height = (int)((float)rect.Height * (float)rawFBHeight / (float)scaledFBHeight);
+      }
     }
 
     private void ScrnToRealXY(ref int x, ref int y)
@@ -401,15 +439,15 @@ namespace Vnc.Viewer
 
       bool hScrlBarUnknown = false;
       bool vScrlBarUnknown = false;
-      if(ClientSize.Width < frameBufWidth)
+      if(ClientSize.Width < scaledFBWidth)
         hScrlBar.Visible = true;
-      else if(ClientSize.Width >= frameBufWidth + vScrlBar.Width)
+      else if(ClientSize.Width >= scaledFBWidth + vScrlBar.Width)
         hScrlBar.Visible = false;
       else
         hScrlBarUnknown = true;
-      if(ClientSize.Height < frameBufHeight)
+      if(ClientSize.Height < scaledFBHeight)
         vScrlBar.Visible = true;
-      else if(ClientSize.Height >= frameBufHeight + hScrlBar.Height)
+      else if(ClientSize.Height >= scaledFBHeight + hScrlBar.Height)
         vScrlBar.Visible = false;
       else
         vScrlBarUnknown = true;
@@ -461,7 +499,7 @@ namespace Vnc.Viewer
         hScrlBar.LargeChange = hScrlBar.Width;
         hScrlBar.SmallChange = hScrlBar.LargeChange / 10; // TODO: Make this configurable
         hScrlBar.Minimum = 0;
-        hScrlBar.Maximum = frameBufWidth - 1;
+        hScrlBar.Maximum = scaledFBWidth - 1;
         HScrlBarVal = oldHScrlBarVal;
       }
 
@@ -503,15 +541,23 @@ namespace Vnc.Viewer
         vScrlBar.LargeChange = vScrlBar.Height;
         vScrlBar.SmallChange = vScrlBar.LargeChange / 10; // TODO: Make this configurable
         vScrlBar.Minimum = 0;
-        vScrlBar.Maximum = frameBufHeight - 1;
+        vScrlBar.Maximum = scaledFBHeight - 1;
         VScrlBarVal = oldVScrlBarVal;
       }
     }
 
     private void ResizeCore()
     {
+      if(connOpts.ViewOpts.CliScaling == CliScaling.Auto)
+      {
+        scaledFBWidth = (UInt16)ClientSize.Width;
+        scaledFBHeight = (UInt16)ClientSize.Height;
+      }
       SetupScrlBars();
       Invalidate();
+
+      if(connOpts.ViewOpts.CliScaling == CliScaling.Auto)
+        return;
 
       // .NET CF does not support MaximumSize...
       if(WindowState == FormWindowState.Maximized)
@@ -519,16 +565,16 @@ namespace Vnc.Viewer
         if(FormBorderStyle != FormBorderStyle.None)
         {
           WindowState = FormWindowState.Normal;
-          ClientSize = new Size(frameBufWidth, frameBufHeight);
+          ClientSize = new Size(scaledFBWidth, scaledFBHeight);
         }
       }
       else
       {
         Rectangle usableRect = UsableRect;
-        if(usableRect.Width > frameBufWidth || usableRect.Height > frameBufHeight)
+        if(usableRect.Width > scaledFBWidth || usableRect.Height > scaledFBHeight)
         {
-          int width = Math.Min(usableRect.Width, frameBufWidth);
-          int height = Math.Min(usableRect.Height, frameBufHeight);
+          int width = Math.Min(usableRect.Width, scaledFBWidth);
+          int height = Math.Min(usableRect.Height, scaledFBHeight);
           width += vScrlBar.Visible? vScrlBar.Width : 0;
           height += hScrlBar.Visible? hScrlBar.Height : 0;
           ClientSize = new Size(width, height);
@@ -560,8 +606,10 @@ namespace Vnc.Viewer
       else
         newOrientation = Orientation.Portrait;
 
-      UInt16 newFrameBufWidth;
-      UInt16 newFrameBufHeight;
+      UInt16 newRawFBWidth;
+      UInt16 newScaledFBWidth;
+      UInt16 newRawFBHeight;
+      UInt16 newScaledFBHeight;
       UInt16 newHScrlBarVal;
       UInt16 newVScrlBarVal;
       if(((connOpts.ViewOpts.Orientation == Orientation.Portrait || connOpts.ViewOpts.Orientation == Orientation.Portrait180) &&
@@ -569,35 +617,42 @@ namespace Vnc.Viewer
          ((connOpts.ViewOpts.Orientation == Orientation.Landscape90 || connOpts.ViewOpts.Orientation == Orientation.Landscape270) &&
           (newOrientation == Orientation.Portrait || newOrientation == Orientation.Portrait180)))
       {
-        newFrameBufWidth = frameBufHeight;
-        newFrameBufHeight = frameBufWidth;
+        newRawFBWidth = rawFBHeight;
+        newScaledFBWidth = scaledFBHeight;
+        newRawFBHeight = rawFBWidth;
+        newScaledFBHeight = scaledFBWidth;
         newHScrlBarVal = VScrlBarVal;
         newVScrlBarVal = HScrlBarVal;
       }
       else
       {
-        newFrameBufWidth = frameBufWidth;
-        newFrameBufHeight = frameBufHeight;
+        newRawFBWidth = rawFBWidth;
+        newScaledFBWidth = scaledFBWidth;
+        newRawFBHeight = rawFBHeight;
+        newScaledFBHeight = scaledFBHeight;
         newHScrlBarVal = HScrlBarVal;
         newVScrlBarVal = VScrlBarVal;
       }
-      Bitmap newFrameBuf = new Bitmap(newFrameBufWidth, newFrameBufHeight);
+      Bitmap newFrameBuf = new Bitmap(newRawFBWidth, newRawFBHeight);
       Graphics newFrameBufGraphics = Graphics.FromImage(newFrameBuf);
 
+      // For rotation without sending an update request. See the comment below.
+      /*
       UInt16 realWidth;
       UInt16 realHeight;
       switch(connOpts.ViewOpts.Orientation)
       {
         case Orientation.Landscape90:
         case Orientation.Landscape270:
-          realWidth = frameBufHeight;
-          realHeight = frameBufWidth;
+          realWidth = rawFBHeight;
+          realHeight = rawFBWidth;
           break;
         default:
-          realWidth = frameBufWidth;
-          realHeight = frameBufHeight;
+          realWidth = rawFBWidth;
+          realHeight = rawFBHeight;
           break;
       }
+      */
 
       LockFrameBuf();
       // This "should" be faster when the network is slow because no extra network traffic is needed.
@@ -610,7 +665,7 @@ namespace Vnc.Viewer
         {
           UInt16 desX = x;
           UInt16 desY = y;
-          RealToFrameBufXY(ref desX, ref desY, newOrientation, newFrameBufWidth, newFrameBufHeight);
+          RealToFrameBufXY(ref desX, ref desY, newOrientation, newRawFBWidth, newRawFBHeight);
           newFrameBuf.SetPixel(desX, desY, this[x, y]);
         }
       }
@@ -620,9 +675,14 @@ namespace Vnc.Viewer
       frameBuf = newFrameBuf;
       frameBufGraphics = newFrameBufGraphics;
       connOpts.ViewOpts.Orientation = newOrientation;
-      frameBufWidth = newFrameBufWidth;
-      frameBufHeight = newFrameBufHeight;
+      rawFBWidth = newRawFBWidth;
+      rawFBHeight = newRawFBHeight;
       UnlockFrameBuf();
+
+      // These values do not affect the other thread and do not need to be in the critical section.
+      scaledFBWidth = newScaledFBWidth;
+      scaledFBHeight = newScaledFBHeight;
+
       try
       {
         conn.SendUpdReq(false); // It is possible to NOT send this update. See the comment above regarding transforming pixel data.
@@ -660,7 +720,7 @@ namespace Vnc.Viewer
       WindowState = FormWindowState.Normal;
       FormBorderStyle = FormBorderStyle.Sizable;
       Menu = menu;
-      ClientSize = new Size(frameBufWidth, frameBufHeight);
+      ClientSize = new Size(scaledFBWidth, scaledFBHeight);
     }
 
     protected void ToggleFullScrn()
@@ -741,8 +801,8 @@ namespace Vnc.Viewer
         }
         else
         {
-          rect.X = usable.X + (usable.Width - frameBufWidth) / 2;
-          rect.Width = frameBufWidth;
+          rect.X = usable.X + (usable.Width - scaledFBWidth) / 2;
+          rect.Width = scaledFBWidth;
         }
         if(vScrlBar.Visible)
         {
@@ -751,8 +811,8 @@ namespace Vnc.Viewer
         }
         else
         {
-          rect.Y = usable.Y + (usable.Height - frameBufHeight) / 2;
-          rect.Height = frameBufHeight;
+          rect.Y = usable.Y + (usable.Height - scaledFBHeight) / 2;
+          rect.Height = scaledFBHeight;
         }
         return rect;
       }
@@ -763,18 +823,15 @@ namespace Vnc.Viewer
       base.OnPaint(e);
       Graphics graphics = e.Graphics;
       Rectangle usable = UsableRect;
+      Rectangle viewable = ViewableRect;
 
-      int x = 0;
-      int y = 0;
-      FrameBufToScrnXY(ref x, ref y);
-      Rectangle frameBufRect = new Rectangle(x, y, frameBufWidth, frameBufHeight);
-
-      Rectangle destRect = Rectangle.Intersect(Rectangle.Intersect(frameBufRect, e.ClipRectangle), usable);
+      Rectangle destRect = Rectangle.Intersect(viewable, e.ClipRectangle);
       if(destRect != Rectangle.Empty)
       {
-        Rectangle srcRect = new Rectangle(destRect.X - x, destRect.Y - y, destRect.Width, destRect.Height);
+        Rectangle srcRect = new Rectangle(destRect.X, destRect.Y, destRect.Width, destRect.Height);
+        ScrnToFrameBufRect(ref srcRect);
         LockFrameBuf();
-        graphics.DrawImage(frameBuf, destRect.X, destRect.Y, srcRect, GraphicsUnit.Pixel);
+        graphics.DrawImage(frameBuf, destRect, srcRect, GraphicsUnit.Pixel);
         UnlockFrameBuf();
       }
 
@@ -791,10 +848,10 @@ namespace Vnc.Viewer
       else
       {
         // Draw the border.
-        if(!frameBufRect.Contains(e.ClipRectangle))
+        if(!viewable.Contains(e.ClipRectangle))
         {
           Region border = new Region(usable);
-          border.Exclude(frameBufRect);
+          border.Exclude(viewable);
           viewBrush.Color = App.Black;
           graphics.FillRegion(viewBrush, border);
         }
@@ -1120,6 +1177,49 @@ namespace Vnc.Viewer
       }
     }
 
+    private void SetScaledDims()
+    {
+      scaledFBWidth = rawFBWidth;
+      scaledFBHeight = rawFBHeight;
+      switch(connOpts.ViewOpts.CliScaling)
+      {
+        case CliScaling.OneHalf:
+          scaledFBWidth /= 2;
+          scaledFBHeight /= 2;
+          break;
+        case CliScaling.OneThird:
+          scaledFBWidth /= 3;
+          scaledFBHeight /= 3;
+          break;
+        case CliScaling.OneFourth:
+          scaledFBWidth /= 4;
+          scaledFBHeight /= 4;
+          break;
+        case CliScaling.OneFifth:
+          scaledFBWidth /= 5;
+          scaledFBHeight /= 5;
+          break;
+        case CliScaling.Double:
+          scaledFBWidth *= 2;
+          scaledFBHeight *= 2;
+          break;
+        case CliScaling.Custom:
+          if(connOpts.ViewOpts.Orientation == Orientation.Landscape90 ||
+             connOpts.ViewOpts.Orientation == Orientation.Landscape270)
+          {
+            scaledFBWidth = connOpts.ViewOpts.CliScalingHeight;
+            scaledFBHeight = connOpts.ViewOpts.CliScalingWidth;
+          }
+          else
+          {
+            scaledFBWidth = connOpts.ViewOpts.CliScalingWidth;
+            scaledFBHeight = connOpts.ViewOpts.CliScalingHeight;
+          }
+          break;
+        // We don't set the dimensions when Auto is used because we may not have ClientSize.
+      }
+    }
+
     private void CliScalingClicked(object sender, EventArgs e)
     {
       MenuItem item = (MenuItem)sender;
@@ -1142,6 +1242,16 @@ namespace Vnc.Viewer
         CliScalingDlg dlg = new CliScalingDlg(connOpts.ViewOpts);
         dlg.ShowDialog();
       }
+
+      UInt16 oldScaledFBWidth = scaledFBWidth;
+      UInt16 oldScaledFBHeight = scaledFBHeight;
+      UInt16 oldHScrlBarVal = HScrlBarVal;
+      UInt16 oldVScrlBarVal = VScrlBarVal;
+
+      SetScaledDims();
+      ResizeCore();
+      HScrlBarVal = (UInt16)((float)oldHScrlBarVal * (float)scaledFBWidth / (float)oldScaledFBWidth);
+      VScrlBarVal = (UInt16)((float)oldVScrlBarVal * (float)scaledFBHeight / (float)oldScaledFBHeight);
 
       CheckCliScaling();
     }
@@ -1385,16 +1495,17 @@ namespace Vnc.Viewer
       {
         case Orientation.Landscape90:
         case Orientation.Landscape270:
-          frameBufWidth = height;
-          frameBufHeight = width;
+          rawFBWidth = height;
+          rawFBHeight = width;
           break;
         default:
-          frameBufWidth = width;
-          frameBufHeight = height;
+          rawFBWidth = width;
+          rawFBHeight = height;
           break;
       }
-      frameBuf = new Bitmap(frameBufWidth, frameBufHeight);
+      frameBuf = new Bitmap(rawFBWidth, rawFBHeight);
       frameBufGraphics = Graphics.FromImage(frameBuf);
+      SetScaledDims();
 
       invalidRectLock = invalidRect;  // Box invalidRect as the lock.
       bgTimer.Tick += new EventHandler(BgTicked);
