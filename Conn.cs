@@ -567,6 +567,7 @@ namespace Vnc.Viewer
           if((encoding & RfbHexSubEncoding.Raw) != 0)
           {
             ReadRawRect(tile);
+            view.InvalidateRect(tile);
             continue;
           }
 
@@ -596,6 +597,7 @@ namespace Vnc.Viewer
           for(int i = 0; i < numSubRects; i++)
             subRects[i] = new HexSubRectMsg(rectBytes, (UInt32)(i * subRectSize), bytesPp, subRectsColored, fgPixel);
           FillRreRect(tile, bgColor, subRects);
+          view.InvalidateRect(tile);
         }
       }
     }
@@ -632,15 +634,19 @@ namespace Vnc.Viewer
         {
           case RfbEncoding.Raw:
             ReadRawRect(rect);
+            view.InvalidateRect(rect);
             break;
           case RfbEncoding.CopyRect:
             ReadCopyRect(rect);
+            view.InvalidateRect(rect);
             break;
           case RfbEncoding.Rre:
             ReadRreRect(rect);
+            view.InvalidateRect(rect);
             break;
           case RfbEncoding.CoRre:
             ReadCoRreRect(rect);
+            view.InvalidateRect(rect);
             break;
           case RfbEncoding.Hex:
             ReadHexRect(rect);
@@ -648,12 +654,7 @@ namespace Vnc.Viewer
           default:
             throw new WarnEx(App.GetStr("Server is using unknown encoding!"));
         }
-
-        // TODO: This does not work as expected currently.
-        // view.InvalidateRect(rect);
       }
-
-      view.Invalidate();
 
       // TODO: Any problem with having this called sync'ly?
       // Checking whether the view has closed before calling Invoke.

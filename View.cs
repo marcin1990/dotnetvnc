@@ -37,13 +37,14 @@ namespace Vnc.Viewer
   /// </remars>
   internal abstract class View : Form
   {
-    private const byte Delta = 50;
+    private const byte Delta = 50; // TODO: Find an optimal value.
+    private const byte BgDelta = 100;  // TODO: Find an optimal value.
 
-    protected const UInt32 CtrlKey = 0x0000FFE3;
-    protected const UInt32 AltKey = 0x0000FFE9;
-    protected const UInt32 EnterKey = 0x0000FF0D;
-    protected const UInt32 DelKey = 0x0000FFFF;
-    protected const UInt32 EscKey = 0x0000FF1B;
+    private const UInt32 CtrlKey = 0x0000FFE3;
+    private const UInt32 AltKey = 0x0000FFE9;
+    private const UInt32 EnterKey = 0x0000FF0D;
+    private const UInt32 DelKey = 0x0000FFFF;
+    private const UInt32 EscKey = 0x0000FF1B;
 
     protected const byte NumTapHoldCircles = 8;
     protected byte TapHoldRadius = 3;
@@ -53,7 +54,7 @@ namespace Vnc.Viewer
     // .NET CF does not have Brushes, SystemBrushes, and Pens...
     private static readonly Brush CtrlBrush = new SolidBrush(SystemColors.Control);
     private static readonly Pen BlackPen = new Pen(App.Black);
-    protected static readonly Brush BlackBrush = new SolidBrush(App.Black);
+    private static readonly Brush BlackBrush = new SolidBrush(App.Black);
     protected static readonly Brush RedBrush = new SolidBrush(App.Red);
     protected static readonly Brush BlueBrush = new SolidBrush(App.Blue);
 
@@ -77,8 +78,8 @@ namespace Vnc.Viewer
     private Hashtable brushTable = new Hashtable();
 
     protected ConnOpts connOpts = null;
-    protected UInt16 frameBufWidth = 0;
-    protected UInt16 frameBufHeight = 0;
+    private UInt16 frameBufWidth = 0;
+    private UInt16 frameBufHeight = 0;
 
     protected int mouseX = 0;
     protected int mouseY = 0;
@@ -92,6 +93,10 @@ namespace Vnc.Viewer
     protected EventHandler rotateHdr = null;
     protected EventHandler fullScrnHdr = null;
     protected EventHandler keysHdr = null;
+
+    private System.Windows.Forms.Timer bgTimer = new System.Windows.Forms.Timer();
+    private Rectangle invalidRect = new Rectangle();
+    private Object invalidRectLock = null; // This is the mutex protecting invalidRect.
 
     // "Real" coordinates => server coordinates.
     // "FrameBuf" coordinates => coordinates of in-memory buffer. This is the same as
@@ -277,9 +282,24 @@ namespace Vnc.Viewer
 
     internal void InvalidateRect(Rectangle rect)
     {
-      // TODO: This does not work. It hangs on PPC. Need to find out why.
-      // RealToScrnRect(ref rect);
-      // Invalidate(rect);
+      // The timer event will pick this up and invalidate the area.
+      Monitor.Enter(invalidRectLock);
+      invalidRect = Rectangle.Union(invalidRect, rect);
+      Monitor.Exit(invalidRectLock);
+    }
+
+    private void BgTicked(object sender, EventArgs e)
+    {
+      Monitor.Enter(invalidRectLock);
+      Rectangle rect = invalidRect;
+      invalidRect = Rectangle.Empty;
+      Monitor.Exit(invalidRectLock);
+
+      if(rect != Rectangle.Empty)
+      {
+        RealToScrnRect(ref rect);
+        Invalidate(rect);
+      }
     }
 
     internal void LockFrameBuf()
@@ -729,30 +749,40 @@ namespace Vnc.Viewer
     protected override void OnPaint(PaintEventArgs e)
     {
       base.OnPaint(e);
-
       Graphics graphics = e.Graphics;
-
       Rectangle usable = UsableRect;
 
       int x = 0;
       int y = 0;
       FrameBufToScrnXY(ref x, ref y);
+      Rectangle frameBufRect = new Rectangle(x, y, frameBufWidth, frameBufHeight);
 
-      Rectangle destRect = new Rectangle(x, y, frameBufWidth, frameBufHeight);
-      destRect.Intersect(usable);
-      Rectangle srcRect = new Rectangle(destRect.X - x, destRect.Y - y, destRect.Width, destRect.Height);
+      Rectangle destRect = Rectangle.Intersect(Rectangle.Intersect(frameBufRect, e.ClipRectangle), usable);
+      if(destRect != Rectangle.Empty)
+      {
+        Rectangle srcRect = new Rectangle(destRect.X - x, destRect.Y - y, destRect.Width, destRect.Height);
+        LockFrameBuf();
+        graphics.DrawImage(frameBuf, destRect.X, destRect.Y, srcRect, GraphicsUnit.Pixel);
+        UnlockFrameBuf();
+      }
 
-      LockFrameBuf();
-      graphics.DrawImage(frameBuf, destRect.X, destRect.Y, srcRect, GraphicsUnit.Pixel);
-      UnlockFrameBuf();
-
-      Region border = new Region(usable);
-      border.Exclude(destRect);
-      graphics.FillRegion(BlackBrush, border);
-
-      // Don't draw on the small rectangle at the bottom right corner
       if(hScrlBar.Visible && vScrlBar.Visible)
-        graphics.FillRectangle(CtrlBrush, vScrlBar.Location.X, hScrlBar.Location.Y, vScrlBar.Width, hScrlBar.Height);
+      {
+        // Draw the little rectangle at the lower right corner of the form.
+        Rectangle smallRect = new Rectangle(vScrlBar.Location.X, hScrlBar.Location.Y, vScrlBar.Width, hScrlBar.Height);
+        if(e.ClipRectangle.IntersectsWith(smallRect))
+          graphics.FillRectangle(CtrlBrush, smallRect);
+      }
+      else
+      {
+        // Draw the border.
+        if(!frameBufRect.Contains(e.ClipRectangle))
+        {
+          Region border = new Region(usable);
+          border.Exclude(frameBufRect);
+          graphics.FillRegion(BlackBrush, border);
+        }
+      }
     }
 
     protected override void OnPaintBackground(PaintEventArgs e)
@@ -1195,6 +1225,12 @@ namespace Vnc.Viewer
       App.AboutBox();
     }
 
+    protected override void OnClosed(EventArgs e)
+    {
+      base.OnClosed(e);
+      bgTimer.Enabled = false;
+    }
+
     internal View(Conn conn, ConnOpts connOpts, UInt16 width, UInt16 height) : base()
     {
       this.conn = conn;
@@ -1213,6 +1249,11 @@ namespace Vnc.Viewer
       }
       frameBuf = new Bitmap(frameBufWidth, frameBufHeight);
       frameBufGraphics = Graphics.FromImage(frameBuf);
+
+      invalidRectLock = invalidRect;  // Box invalidRect as the lock.
+      bgTimer.Tick += new EventHandler(BgTicked);
+      bgTimer.Interval = BgDelta;
+      bgTimer.Enabled = true;
 
       timer.Tick += new EventHandler(Ticked);
       timer.Interval = Delta;
