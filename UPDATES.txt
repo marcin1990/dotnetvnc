@@ -1,0 +1,33 @@
+Items
+=====
+README.txt
+	-Documentation
+Project Web
+	-News
+	-Screenshots
+	-Documentation
+SourceForge
+	-News
+	-Introduction
+
+
+File Releases Checklist
+=======================
+-Update README.txt with new features, installation guidelines, execution steps, known issues, history, and TODOs.
+-Update Project Web with news, new features, screenshots, installation guidelines, known issues, history, and TODOs.
+-Make zip packages.
+-Create a new release and upload the new files.
+-Export the web.
+-Create a News at SourceForge.
+
+Documentation Modification Checklist
+===================================
+-Modify the Introduction at SourceForge if needed.
+-Modify README.txt accordingly and mark it in history.
+-Modify Project Web accordingly and mark it in history.
+-README.txt and Project Web will be effective at the next release.
+
+News
+====
+-Create a News at SourceForge.
+-Make the changes at Project Web. Export the web.
