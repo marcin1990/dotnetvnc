@@ -37,3 +37,10 @@ If binary compatibility (i.e., the same exe runs on both desktop and PPC) is des
 7) Execute the following line, replacing the path of the various DLLs accordingly:
 	csc /target:winexe /out:vncviewer.exe /nostdlib /noconfig /reference:\pc#\netcf\System.dll;\pc#\netcf\mscorlib.dll;\pc#\netcf\System.Xml.dll;\pc#\netcf\System.Drawing.dll;\pc#\netcf\System.Windows.Forms.dll *.cs
 8) The build process should complete in seconds.
+
+To add hi-res support (VGA on PPC and QVGA on Smartphone)
+=========================================================
+1) Complete the build process as outlined above.
+2) Install the Windows Mobile Developer Resources from Microsoft.
+3) Open a command prompt and execute the following command, replacing the paths with whatever appropriate in your environment.
+	res2exe -c -r "C:\Program Files\Developer Resources for Windows Mobile 2003 Second Edition\tools\hidpi.res" C:\pc#\proj\vncviewer\vncviewer.exe

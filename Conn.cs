@@ -656,7 +656,11 @@ namespace Vnc.Viewer
       view.Invalidate();
 
       // TODO: Any problem with having this called sync'ly?
-      view.Invoke(scrnUpdHdr);
+      // Checking whether the view has closed before calling Invoke.
+      // This is a workaround for a bug in .NET CF prior to SP3.
+      // The bug causes an application to hang if Invoke is called on a disposed object.
+      if(!termBgThread)
+        view.Invoke(scrnUpdHdr);
     }
 
     private void ReadServCutTxt()

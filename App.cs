@@ -111,7 +111,7 @@ namespace Vnc.Viewer
     {
       MessageBox.Show(App.GetStr(@"
 .NET VNC Viewer 1.0.1.0
-Feb 20, 2005
+Feb 27, 2005
 
 Copyright (C) 2004-2005 Rocky Lo. All Rights Reserved.
 Copyright (C) 2002 Ultr@VNC Team Members. All Rights Reserved.
@@ -246,8 +246,16 @@ Copyright (C) 1999 AT&T Laboratories Cambridge. All Rights Reserved.
 
       while(connList.Count > 0)
       {
-        Application.DoEvents();
-        Thread.Sleep(Delta);
+        try
+        {
+          Application.DoEvents();
+          Thread.Sleep(Delta);
+        }
+        catch(ObjectDisposedException)
+        {
+          // Catching ObjectDisposedException to work around a bug in .NET CF prior to SP3.
+          // This exception is thrown when the server drops a connection.
+        }
       }
 
       return 0;

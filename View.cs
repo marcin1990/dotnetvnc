@@ -50,11 +50,10 @@ namespace Vnc.Viewer
     protected byte BigCircleRadius = 15;
     protected byte TapHoldCircleRadius = 3;
 
-    // .NET CF does not have SystemBrushes and Pens...
+    // .NET CF does not have Brushes, SystemBrushes, and Pens...
     private static readonly Brush CtrlBrush = new SolidBrush(SystemColors.Control);
     private static readonly Pen BlackPen = new Pen(App.Black);
-
-    // .NET CF does not have Brushes...
+    protected static readonly Brush BlackBrush = new SolidBrush(App.Black);
     protected static readonly Brush RedBrush = new SolidBrush(App.Red);
     protected static readonly Brush BlueBrush = new SolidBrush(App.Blue);
 
@@ -171,9 +170,27 @@ namespace Vnc.Viewer
     private void FrameBufToScrnXY(ref int x, ref int y)
     {
       if(hScrlBar.Visible)
-        x += -hScrlBar.Value;
+        x -= hScrlBar.Value; // Scrolling
+      else
+      {
+        // Border
+        if(vScrlBar.Visible)
+          x += (ClientRectangle.Width - frameBufWidth - vScrlBar.Width) / 2;
+        else
+          x += (ClientRectangle.Width - frameBufWidth) / 2;
+      }
       if(vScrlBar.Visible)
-        y += -vScrlBar.Value;
+        y -= vScrlBar.Value; // Scrolling
+      else
+      {
+        // Border
+        if(hScrlBar.Visible)
+          y += (ClientRectangle.Height - frameBufHeight - hScrlBar.Height) / 2;
+        else
+          y += (ClientRectangle.Height - frameBufHeight) / 2;
+      }
+
+      // Scrollbar offsets
       switch(connOpts.ViewOpts.Orientation)
       {
         case Orientation.Landscape90:
@@ -213,21 +230,33 @@ namespace Vnc.Viewer
     {
       if(hScrlBar.Visible)
       {
-        x += hScrlBar.Value;
+        x += hScrlBar.Value; // Scrolling
         if(connOpts.ViewOpts.Orientation == Orientation.Landscape90 ||
            connOpts.ViewOpts.Orientation == Orientation.Portrait180)
-        {
-          y -= hScrlBar.Height;
-        }
+          y -= hScrlBar.Height; // Scrollbar offset
+      }
+      else
+      {
+        // Border
+        if(vScrlBar.Visible)
+          x -= (ClientRectangle.Width - frameBufWidth - vScrlBar.Width) / 2;
+        else
+          x -= (ClientRectangle.Width - frameBufWidth) / 2;
       }
       if(vScrlBar.Visible)
       {
-        y += vScrlBar.Value;
+        y += vScrlBar.Value; // Scrolling
         if(connOpts.ViewOpts.Orientation == Orientation.Portrait180 ||
            connOpts.ViewOpts.Orientation == Orientation.Landscape270)
-        {
-          x -= vScrlBar.Width;
-        }
+          x -= vScrlBar.Width; // Scrollbar offset
+      }
+      else
+      {
+        // Border
+        if(hScrlBar.Visible)
+          y -= (ClientRectangle.Height - frameBufHeight - hScrlBar.Height) / 2;
+        else
+          y -= (ClientRectangle.Height - frameBufHeight) / 2;
       }
       x = Math.Max(x, 0);
       x = Math.Min(x, frameBufWidth - 1);
@@ -684,12 +713,49 @@ namespace Vnc.Viewer
 
       Graphics graphics = e.Graphics;
 
+      // graphics.Clip does not work for some strange reasons...
+
+      Rectangle viewRect = new Rectangle();
+      if(hScrlBar.Visible)
+      {
+        viewRect.Height = ClientRectangle.Height - hScrlBar.Height;
+        if(hScrlBar.Top <= 0) // At the top
+          viewRect.Y = hScrlBar.Height;
+        else
+          viewRect.Y = 0;
+      }
+      else
+      {
+        viewRect.Height = ClientRectangle.Height;
+        viewRect.Y = 0;
+      }
+      if(vScrlBar.Visible)
+      {
+        viewRect.Width = ClientRectangle.Width - vScrlBar.Width;
+        if(vScrlBar.Left <= 0) // At the left edge
+          viewRect.X = vScrlBar.Width;
+        else
+          viewRect.X = 0;
+      }
+      else
+      {
+        viewRect.Width = ClientRectangle.Width;
+        viewRect.X = 0;
+      }
+
       int x = 0;
       int y = 0;
       FrameBufToScrnXY(ref x, ref y);
+      Rectangle destRect = new Rectangle(x, y, frameBufWidth, frameBufHeight);
+      destRect.Intersect(viewRect);
+      Rectangle srcRect = new Rectangle(destRect.X - x, destRect.Y - y, destRect.Width, destRect.Height);
       LockFrameBuf();
-      graphics.DrawImage(frameBuf, x, y);
+      graphics.DrawImage(frameBuf, destRect.X, destRect.Y, srcRect, GraphicsUnit.Pixel);
       UnlockFrameBuf();
+
+      Region border = new Region(viewRect);
+      border.Exclude(destRect);
+      graphics.FillRegion(BlackBrush, border);
 
       // Don't draw on the small rectangle at the bottom right corner
       if(hScrlBar.Visible && vScrlBar.Visible)
