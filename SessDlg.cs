@@ -57,14 +57,31 @@ namespace Vnc.Viewer
     protected CheckBox viewOnlyBox = new CheckBox();
     protected CheckBox shareServBox = new CheckBox();
 
+    protected EventHandler okHdr = null;
+    protected EventHandler cancelHdr = null;
+    protected EventHandler aboutHdr = null;
+    protected EventHandler saveDefsHdr = null;
+    protected EventHandler restoreDefsHdr = null;
+
     internal SessDlg() : base()
     {
       viewOpts = new ViewOpts();
+      SetupHdrs();
     }
 
     internal SessDlg(ViewOpts viewOpts) : base()
     {
       this.viewOpts = viewOpts;
+      SetupHdrs();
+    }
+
+    private void SetupHdrs()
+    {
+      okHdr = new EventHandler(OkClicked);
+      cancelHdr = new EventHandler(CancelClicked);
+      aboutHdr = new EventHandler(AboutClicked);
+      saveDefsHdr = new EventHandler(SaveDefsClicked);
+      restoreDefsHdr = new EventHandler(RestoreDefsClicked);
     }
 
     internal ConnOpts ConnOpts
@@ -80,7 +97,15 @@ namespace Vnc.Viewer
       App.AboutBox();
     }
 
-    protected abstract void Ok();
+    protected void Ok()
+    {
+      if(!ValidateHostPort())
+        return;
+      GetPasswd();
+      GetOptions();
+      SaveConnHist();
+      DialogResult = DialogResult.OK;
+    }
 
     protected void OkClicked(object sender, EventArgs e)
     {
@@ -266,7 +291,7 @@ namespace Vnc.Viewer
       shareServBox.Checked = !viewOpts.ShareServ;
     }
 
-    protected void SaveConnHist()
+    private void SaveConnHist()
     {
       try
       {
@@ -294,7 +319,7 @@ namespace Vnc.Viewer
 
     protected abstract void AddConnHistEntry(string entry);
 
-    protected void LoadConnHist()
+    private void LoadConnHist()
     {
       try
       {
@@ -312,7 +337,7 @@ namespace Vnc.Viewer
       }
     }
 
-    protected void SaveDefs()
+    protected void SaveDefsClicked(object sender, EventArgs e)
     {
       GetOptions();
       try
@@ -329,7 +354,7 @@ namespace Vnc.Viewer
       }
     }
 
-    protected void RestoreDefs()
+    protected void RestoreDefsClicked(object sender, EventArgs e)
     {
       try
       {

@@ -88,11 +88,11 @@ namespace Vnc.Viewer
     internal bool IsFmtChgPending = false;
 
     // Once constructed this does not change.
-    private EventHandler scrnUpdHdlr = null;
+    private EventHandler scrnUpdHdr = null;
 
     internal Conn()
     {
-      scrnUpdHdlr = new EventHandler(ScrnUpd);
+      scrnUpdHdr = new EventHandler(ScrnUpd);
     }
 
     private void ViewClosed(object sender, EventArgs e)
@@ -656,7 +656,7 @@ namespace Vnc.Viewer
       view.Invalidate();
 
       // TODO: Any problem with having this called sync'ly?
-      view.Invoke(scrnUpdHdlr);
+      view.Invoke(scrnUpdHdr);
     }
 
     private void ReadServCutTxt()

@@ -21,20 +21,188 @@
 // whence you received this file, check http://www.uk.research.att.com/vnc or contact
 // the authors on vnc@uk.research.att.com for information on obtaining it.
 
+using System;
+using System.Drawing;
+using System.Windows.Forms;
+
 namespace Vnc.Viewer
 {
   internal class SessDlgSp : SessDlg
   {
+    private MenuItem okItem = new MenuItem();
+    private MenuItem generalItem = new MenuItem();
+    private MenuItem displayItem = new MenuItem();
+    private MenuItem othersItem = new MenuItem();
+    private MenuItem saveLoadItem = new MenuItem();
+    private MenuItem dashItem = new MenuItem();
+    private MenuItem aboutItem = new MenuItem();
+    private MenuItem cancelItem = new MenuItem();
+    private MenuItem optionsItem = new MenuItem();
+
+    private Panel generalPanel = new Panel();
+    private ComboBox recentBox = new ComboBox();
+
+    private Panel displayPanel = new Panel();
+
+    private Panel othersPanel = new Panel();
+
+    private MenuItem saveDefsItem = new MenuItem();
+    private MenuItem restoreDefsItem = new MenuItem();
+
     internal SessDlgSp() : base()
     {}
 
     internal SessDlgSp(ViewOpts viewOpts) : base(viewOpts)
     {}
 
-    protected override void Ok()
-    {}
-
     protected override void AddConnHistEntry(string entry)
-    {}
+    {
+      recentBox.Items.Add(entry);
+    }
+
+    private void RecentBoxChanged(object sender, EventArgs e)
+    {
+      remoteEndPt.Text = recentBox.Text;
+    }
+
+    private void SwitchPanel(MenuItem item)
+    {
+      generalPanel.Visible = false;
+      displayPanel.Visible = false;
+      othersPanel.Visible = false;
+      if(item == displayItem)
+      {
+        displayPanel.Visible = true;
+        fullScrnBox.Focus();
+      }
+      else if(item == othersItem)
+      {
+        othersPanel.Visible = true;
+        viewOnlyBox.Focus();
+      }
+      else // Assume general.
+      {
+        generalPanel.Visible = true;
+        remoteEndPt.Focus();
+      }
+    }
+
+    private void PanelItemClicked(object sender, EventArgs e)
+    {
+      SwitchPanel((MenuItem)sender);
+    }
+
+    protected override void OnResize(EventArgs e)
+    {
+      base.OnResize(e);
+      generalPanel.Size = ClientRectangle.Size;
+      remoteEndPt.Width = generalPanel.ClientRectangle.Right - App.DialogSpacing - remoteEndPt.Left;
+      passwdBox.Width = generalPanel.ClientRectangle.Right - App.DialogSpacing - passwdBox.Left;
+      recentBox.Width = generalPanel.ClientRectangle.Right - App.DialogSpacing - recentBox.Left;
+      displayPanel.Size = ClientRectangle.Size;
+      fullScrnBox.Width = displayPanel.ClientRectangle.Right - fullScrnBox.Left;
+      rotateBox.Width = displayPanel.ClientRectangle.Right - App.DialogSpacing - rotateBox.Left;
+      pixelSizeBox.Width = displayPanel.ClientRectangle.Right - App.DialogSpacing - pixelSizeBox.Left;
+      othersPanel.Size = ClientRectangle.Size;
+      viewOnlyBox.Width = othersPanel.ClientRectangle.Right - viewOnlyBox.Left;
+      shareServBox.Width = othersPanel.ClientRectangle.Right - shareServBox.Left;
+    }
+
+    protected override void OnLoad(EventArgs e)
+    {
+      base.OnLoad(e);
+
+      EventHandler panelItemHdr = new EventHandler(PanelItemClicked);
+
+      okItem.Text = App.GetStr("OK");
+      okItem.Click += okHdr;
+      Menu.MenuItems.Add(okItem);
+      optionsItem.Text = App.GetStr("Options");
+      Menu.MenuItems.Add(optionsItem);
+      generalItem.Text = App.GetStr("General...");
+      generalItem.Click += panelItemHdr;
+      optionsItem.MenuItems.Add(generalItem);
+      displayItem.Text = App.GetStr("Display...");
+      displayItem.Click += panelItemHdr;
+      optionsItem.MenuItems.Add(displayItem);
+      othersItem.Text = App.GetStr("Others...");
+      othersItem.Click += panelItemHdr;
+      optionsItem.MenuItems.Add(othersItem);
+      saveLoadItem.Text = App.GetStr("Re/Store");
+      optionsItem.MenuItems.Add(saveLoadItem);
+      dashItem.Text = "-";
+      optionsItem.MenuItems.Add(dashItem);
+      aboutItem.Text = App.GetStr("About");
+      aboutItem.Click += aboutHdr;
+      optionsItem.MenuItems.Add(aboutItem);
+      cancelItem.Text = App.GetStr("Cancel");
+      cancelItem.Click += cancelHdr;
+      optionsItem.MenuItems.Add(cancelItem);
+
+      Graphics graphics = CreateGraphics();
+
+      generalPanel.Size = ClientRectangle.Size;
+      Controls.Add(generalPanel);
+      servLbl.Location = new Point(App.DialogSpacing, App.DialogSpacing);
+      servLbl.Size = graphics.MeasureString(servLbl.Text, Font).ToSize();
+      generalPanel.Controls.Add(servLbl);
+      remoteEndPt.Location = new Point(App.DialogSpacing, servLbl.Bottom + App.DialogSpacing);
+      remoteEndPt.Width = generalPanel.ClientRectangle.Right - App.DialogSpacing - remoteEndPt.Left;
+      generalPanel.Controls.Add(remoteEndPt);
+      remoteEndPtLbl.Location = new Point(App.DialogSpacing, remoteEndPt.Bottom + App.DialogSpacing);
+      remoteEndPtLbl.Size = graphics.MeasureString(remoteEndPtLbl.Text, Font).ToSize();
+      generalPanel.Controls.Add(remoteEndPtLbl);
+      passwdLbl.Location = new Point(App.DialogSpacing, remoteEndPtLbl.Bottom + App.DialogSpacing);
+      passwdLbl.Size = graphics.MeasureString(passwdLbl.Text, Font).ToSize();
+      generalPanel.Controls.Add(passwdLbl);
+      passwdBox.Location = new Point(App.DialogSpacing, passwdLbl.Bottom + App.DialogSpacing);
+      passwdBox.Width = generalPanel.ClientRectangle.Right - App.DialogSpacing - passwdBox.Left;
+      generalPanel.Controls.Add(passwdBox);
+      recentLbl.Location = new Point(App.DialogSpacing, passwdBox.Bottom + App.DialogSpacing);
+      recentLbl.Size = graphics.MeasureString(recentLbl.Text, Font).ToSize();
+      generalPanel.Controls.Add(recentLbl);
+      recentBox.Location = new Point(App.DialogSpacing, recentLbl.Bottom + App.DialogSpacing);
+      recentBox.Width = generalPanel.ClientRectangle.Right - App.DialogSpacing - recentBox.Left;
+      recentBox.SelectedIndexChanged += new EventHandler(RecentBoxChanged);
+      generalPanel.Controls.Add(recentBox);
+
+      displayPanel.Size = ClientRectangle.Size;
+      Controls.Add(displayPanel);
+      fullScrnBox.Location = new Point(App.DialogSpacing, App.DialogSpacing);
+      fullScrnBox.Width = displayPanel.ClientRectangle.Right - fullScrnBox.Left;
+      displayPanel.Controls.Add(fullScrnBox);
+      rotateLbl.Location = new Point(App.DialogSpacing, fullScrnBox.Bottom + App.DialogSpacing);
+      rotateLbl.Size = graphics.MeasureString(rotateLbl.Text, Font).ToSize();
+      displayPanel.Controls.Add(rotateLbl);
+      rotateBox.Location = new Point(App.DialogSpacing, rotateLbl.Bottom + App.DialogSpacing);
+      rotateBox.Width = displayPanel.ClientRectangle.Right - App.DialogSpacing - rotateBox.Left;
+      displayPanel.Controls.Add(rotateBox);
+      pixelSizeLbl.Location = new Point(App.DialogSpacing, rotateBox.Bottom + App.DialogSpacing);
+      pixelSizeLbl.Size = graphics.MeasureString(pixelSizeLbl.Text, Font).ToSize();
+      displayPanel.Controls.Add(pixelSizeLbl);
+      pixelSizeBox.Location = new Point(App.DialogSpacing, pixelSizeLbl.Bottom + App.DialogSpacing);
+      pixelSizeBox.Width = displayPanel.ClientRectangle.Right - App.DialogSpacing - pixelSizeBox.Left;
+      displayPanel.Controls.Add(pixelSizeBox);
+
+      othersPanel.Size = ClientRectangle.Size;
+      Controls.Add(othersPanel);
+      viewOnlyBox.Location = new Point(App.DialogSpacing, App.DialogSpacing);
+      viewOnlyBox.Width = othersPanel.ClientRectangle.Right - viewOnlyBox.Left;
+      othersPanel.Controls.Add(viewOnlyBox);
+      shareServBox.Location = new Point(App.DialogSpacing, viewOnlyBox.Bottom + App.DialogSpacing);
+      shareServBox.Width = othersPanel.ClientRectangle.Right - shareServBox.Left;
+      othersPanel.Controls.Add(shareServBox);
+
+      graphics.Dispose();
+
+      saveDefsItem.Text = App.GetStr("Save settings as default");
+      saveDefsItem.Click += saveDefsHdr;
+      saveLoadItem.MenuItems.Add(saveDefsItem);
+      restoreDefsItem.Text = App.GetStr("Restore default settings");
+      restoreDefsItem.Click += restoreDefsHdr;
+      saveLoadItem.MenuItems.Add(restoreDefsItem);
+
+      SwitchPanel(generalItem);
+    }
   }
 }

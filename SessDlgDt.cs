@@ -56,16 +56,6 @@ namespace Vnc.Viewer
     internal SessDlgDt(ViewOpts viewOpts) : base(viewOpts)
     {}
 
-    protected override void Ok()
-    {
-      if(!ValidateHostPort())
-        return;
-      GetPasswd();
-      GetOptions();
-      SaveConnHist();
-      DialogResult = DialogResult.OK;
-    }
-
     private void KeyPressed(object sender, KeyPressEventArgs e)
     {
       e.Handled = true;
@@ -169,16 +159,6 @@ namespace Vnc.Viewer
       SetOptions(connOpts.ViewOpts);
     }
 
-    private void SaveDefsClicked(object sender, EventArgs e)
-    {
-      SaveDefs();
-    }
-
-    private void RestoreDefsClicked(object sender, EventArgs e)
-    {
-      RestoreDefs();
-    }
-
     protected override void AddConnHistEntry(string entry)
     {
       recentBox.Items.Add(entry);
@@ -203,8 +183,8 @@ namespace Vnc.Viewer
       recentBox.Height = generalPage.ClientRectangle.Bottom - App.DialogSpacing - recentBox.Top;
       rotateBox.Width = displayPage.ClientRectangle.Right - App.DialogSpacing - rotateBox.Left;
       pixelSizeBox.Width = displayPage.ClientRectangle.Right - App.DialogSpacing - pixelSizeBox.Left;
-      viewOnlyBox.Width = displayPage.ClientRectangle.Right - viewOnlyBox.Left;
-      shareServBox.Width = displayPage.ClientRectangle.Right - shareServBox.Left;
+      viewOnlyBox.Width = othersPage.ClientRectangle.Right - viewOnlyBox.Left;
+      shareServBox.Width = othersPage.ClientRectangle.Right - shareServBox.Left;
       saveConnOptsBtn.Width = saveLoadPage.ClientRectangle.Right - App.DialogSpacing - saveConnOptsBtn.Left;
       saveConnOptsPwdBtn.Width = saveLoadPage.ClientRectangle.Right - App.DialogSpacing - saveConnOptsPwdBtn.Left;
       loadConnOptsBtn.Width = saveLoadPage.ClientRectangle.Right - App.DialogSpacing - loadConnOptsBtn.Left;
@@ -221,7 +201,7 @@ namespace Vnc.Viewer
 
       aboutBtn.Location = new Point(ClientRectangle.Right - App.DialogSpacing - aboutBtn.Width, ClientRectangle.Bottom - App.DialogSpacing - aboutBtn.Height);
       aboutBtn.Text = App.GetStr("About");
-      aboutBtn.Click += new EventHandler(AboutClicked);
+      aboutBtn.Click += aboutHdr;
       aboutBtn.KeyPress += keyPressHdr;
       cancelBtn.Location = new Point(aboutBtn.Left - App.DialogSpacing - cancelBtn.Width, ClientRectangle.Bottom - App.DialogSpacing - cancelBtn.Height);
       cancelBtn.Text = App.GetStr("Cancel");
@@ -229,7 +209,7 @@ namespace Vnc.Viewer
       cancelBtn.KeyPress += keyPressHdr;
       okBtn.Location = new Point(cancelBtn.Left - App.DialogSpacing - okBtn.Width, cancelBtn.Top);
       okBtn.Text = App.GetStr("OK");
-      okBtn.Click += new EventHandler(OkClicked);
+      okBtn.Click += okHdr;
       okBtn.KeyPress += keyPressHdr;
       tabCtrl.Location = new Point(App.DialogSpacing, App.DialogSpacing);
       tabCtrl.Size = new Size(aboutBtn.Right - tabCtrl.Left, aboutBtn.Top - App.DialogSpacing - tabCtrl.Top);
@@ -298,11 +278,11 @@ namespace Vnc.Viewer
       othersPage.Text = App.GetStr("Others");
       viewOnlyBox.Location = new Point(App.DialogSpacing, App.DialogSpacing);
       viewOnlyBox.KeyPress += keyPressHdr;
-      viewOnlyBox.Width = displayPage.ClientRectangle.Right - viewOnlyBox.Left;
+      viewOnlyBox.Width = othersPage.ClientRectangle.Right - viewOnlyBox.Left;
       othersPage.Controls.Add(viewOnlyBox);
       shareServBox.Location = new Point(viewOnlyBox.Left, viewOnlyBox.Bottom + App.DialogSpacing);
       shareServBox.KeyPress += keyPressHdr;
-      shareServBox.Width = displayPage.ClientRectangle.Right - shareServBox.Left;
+      shareServBox.Width = othersPage.ClientRectangle.Right - shareServBox.Left;
       othersPage.Controls.Add(shareServBox);
 
       tabCtrl.TabPages.Add(saveLoadPage);
@@ -329,13 +309,13 @@ namespace Vnc.Viewer
       saveDefsBtn.Text = App.GetStr("Save settings as default");
       saveDefsBtn.Width = saveLoadPage.ClientRectangle.Right - App.DialogSpacing - saveDefsBtn.Left;
       saveDefsBtn.KeyPress += keyPressHdr;
-      saveDefsBtn.Click += new EventHandler(SaveDefsClicked);
+      saveDefsBtn.Click += saveDefsHdr;
       saveLoadPage.Controls.Add(saveDefsBtn);
       restoreDefsBtn.Location = new Point(saveDefsBtn.Left, saveDefsBtn.Bottom + App.DialogSpacing);
       restoreDefsBtn.Text = App.GetStr("Restore default settings");
       restoreDefsBtn.Width = saveLoadPage.ClientRectangle.Right - App.DialogSpacing - restoreDefsBtn.Left;
       restoreDefsBtn.KeyPress += keyPressHdr;
-      restoreDefsBtn.Click += new EventHandler(RestoreDefsClicked);
+      restoreDefsBtn.Click += restoreDefsHdr;
       saveLoadPage.Controls.Add(restoreDefsBtn);
 
       graphics.Dispose();
