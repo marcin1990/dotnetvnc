@@ -17,7 +17,14 @@ Features
 
 Requirements
 ============
-It should work on anything with .NET Compact Framework 1.0 (or later) or .NET Framework 1.1 (or later) installed. That said, it has only been tested on a HP 4150 (Pocket PC 2003) and a desktop with Windows XP Professional (.NET Framework 1.1).
+It works on the following devices:
+-It should work on all Windows desktops with .NET Framework 1.1 (or later). I only tested it on my workstation with Windows XP Professional, however.
+-It should work on all Pocket PCs with .NET Compact Framework 1.0 (or later). I only tested it on my HP 4150 with Windows Mobile 2003 though.
+-It should work on other Windows CE devices with .NET Compact Framework 1.0 installed. I haven't tested with any.
+
+It does not work for:
+-Smartphones. See the tracker item at http://sourceforge.net/tracker/index.php?func=detail&aid=1109941&group_id=128549&atid=712011. A future version may make it work.
+
 It may or may not work on previous versions of .NET Framework.
 
 Installation
@@ -36,6 +43,8 @@ Any comments and questions should be directed to the corresponding forum at http
 Known Issues
 ============
 -It crashes if executed from a share.
+-It crashes if the remote computer reboots.
+-It may not work with UltraVNC 1.0.0 RC 19.5. Please see the tracker item at http://sourceforge.net/tracker/index.php?func=detail&aid=1110877&group_id=128549&atid=712008.
 
 Comments on C# and .NET (Compact) Framework
 ===========================================
