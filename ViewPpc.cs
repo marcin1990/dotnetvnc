@@ -59,9 +59,9 @@ namespace Vnc.Viewer
         else
         {
           tapHoldCnt++;
-          Brush brush = (tapHoldCnt > NumTapHoldCircles)? BlueBrush : RedBrush;
+          Color color = (tapHoldCnt > NumTapHoldCircles)? App.Blue : App.Red;
           UInt16 numCircles = (UInt16)((tapHoldCnt > NumTapHoldCircles)? tapHoldCnt - NumTapHoldCircles : tapHoldCnt);
-          DrawTapHoldCircles(numCircles, brush);
+          DrawTapHoldCircles(numCircles, color);
         }
       }
       else
@@ -71,7 +71,7 @@ namespace Vnc.Viewer
         else
         {
           tapHoldCnt++;
-          DrawTapHoldCircles(tapHoldCnt, BlueBrush);
+          DrawTapHoldCircles(tapHoldCnt, App.Blue);
         }
       }
     }

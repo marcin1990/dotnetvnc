@@ -46,7 +46,7 @@ namespace Vnc.Viewer
 
     /// <summary>This determines how frequently the event loop wakes up.</summary>
     // TODO: Choose an optimal value.
-    internal const byte Delta = 10;
+    internal const byte Delta = 1;
 
     /// <summary>DevCap automatically detects device capabilities.</summary>
     internal static readonly DevCap DevCap = new DevCap();
@@ -110,8 +110,8 @@ namespace Vnc.Viewer
     internal static void AboutBox()
     {
       MessageBox.Show(App.GetStr(@"
-.NET VNC Viewer 1.0.1.3
-Mar 6, 2005
+.NET VNC Viewer 1.0.1.4
+Mar 12, 2005
 
 Copyright (C) 2004-2005 Rocky Lo. All Rights Reserved.
 Copyright (C) 2002 Ultr@VNC Team Members. All Rights Reserved.

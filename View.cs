@@ -52,11 +52,9 @@ namespace Vnc.Viewer
     protected byte TapHoldCircleRadius = 3;
 
     // .NET CF does not have Brushes, SystemBrushes, and Pens...
-    private static readonly Brush CtrlBrush = new SolidBrush(SystemColors.Control);
-    private static readonly Pen BlackPen = new Pen(App.Black);
-    private static readonly Brush BlackBrush = new SolidBrush(App.Black);
-    protected static readonly Brush RedBrush = new SolidBrush(App.Red);
-    protected static readonly Brush BlueBrush = new SolidBrush(App.Blue);
+    protected Pen viewPen = new Pen(App.Black);
+    private SolidBrush viewBrush = new SolidBrush(App.Black);
+    private SolidBrush frameBufBrush = new SolidBrush(App.Black);
 
     protected System.Windows.Forms.Timer timer = new System.Windows.Forms.Timer();
     protected HScrollBar hScrlBar = new HScrollBar();
@@ -75,7 +73,6 @@ namespace Vnc.Viewer
     private Bitmap frameBuf = null;
     private Graphics frameBufGraphics = null;
     private Conn conn = null;
-    private Hashtable brushTable = new Hashtable();
 
     protected ConnOpts connOpts = null;
     private UInt16 frameBufWidth = 0;
@@ -251,23 +248,9 @@ namespace Vnc.Viewer
 
     internal void FillRect(Rectangle rect, Color color)
     {
-      // Creating brushes is very costly in terms of processing time.
-      // So we store all the brushes we have used in the past, and
-      // try to reuse them if possible.
-      // This gives a boost in performance, but it requires much more
-      // memory.
-      // Practically it seems the viewer still performs well when true
-      // color is used.
-      // TODO: Some "smart" algorithm can be used such as LRU, etc.
-
-      SolidBrush brush = (SolidBrush)brushTable[color];
-      bool isNewBrush = (brush == null);
-      if(isNewBrush)
-        brush = new SolidBrush(color);
       RealToFrameBufRect(ref rect);
-      frameBufGraphics.FillRectangle(brush, rect);
-      if(isNewBrush)
-        brushTable.Add(color, brush);
+      frameBufBrush.Color = color;
+      frameBufGraphics.FillRectangle(frameBufBrush, rect);
     }
 
     internal void CopyRect(Rectangle rect, UInt16 x, UInt16 y)
@@ -771,7 +754,10 @@ namespace Vnc.Viewer
         // Draw the little rectangle at the lower right corner of the form.
         Rectangle smallRect = new Rectangle(vScrlBar.Location.X, hScrlBar.Location.Y, vScrlBar.Width, hScrlBar.Height);
         if(e.ClipRectangle.IntersectsWith(smallRect))
-          graphics.FillRectangle(CtrlBrush, smallRect);
+        {
+          viewBrush.Color = SystemColors.Control;
+          graphics.FillRectangle(viewBrush, smallRect);
+        }
       }
       else
       {
@@ -780,7 +766,8 @@ namespace Vnc.Viewer
         {
           Region border = new Region(usable);
           border.Exclude(frameBufRect);
-          graphics.FillRegion(BlackBrush, border);
+          viewBrush.Color = App.Black;
+          graphics.FillRegion(viewBrush, border);
         }
       }
     }
@@ -792,7 +779,7 @@ namespace Vnc.Viewer
 
     protected abstract void Ticked(object sender, EventArgs e);
 
-    protected void DrawTapHoldCircles(UInt16 numCircles, Brush brush)
+    protected void DrawTapHoldCircles(UInt16 numCircles, Color color)
     {
       Graphics graphics = CreateGraphics();
 
@@ -820,8 +807,10 @@ namespace Vnc.Viewer
         angle += 2 * Math.PI * i / NumTapHoldCircles;
         circleRect.X = (int)(Math.Cos(angle) * BigCircleRadius + mouseX - TapHoldCircleRadius);
         circleRect.Y = (int)(Math.Sin(angle) * BigCircleRadius + mouseY - TapHoldCircleRadius);
-        graphics.FillEllipse(brush, circleRect);
-        graphics.DrawEllipse(BlackPen, circleRect);
+        viewBrush.Color = color;
+        graphics.FillEllipse(viewBrush, circleRect);
+        viewPen.Color = App.Black;
+        graphics.DrawEllipse(viewPen, circleRect);
       }
 
       graphics.Dispose();

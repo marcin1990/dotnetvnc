@@ -31,7 +31,6 @@ namespace Vnc.Viewer
   {
     private const byte CursorDelta = 100; // TODO: Find an optimal value.
     private const UInt16 InputDelta = 5000; // TODO: Find an optimal value.
-    private static readonly Pen RedPen = new Pen(App.Red);
 
     private Timer cursorTimer = new Timer();
     private int xSpeed = 0;
@@ -121,7 +120,7 @@ namespace Vnc.Viewer
       else
       {
         tapHoldCnt++;
-        DrawTapHoldCircles(tapHoldCnt, BlueBrush);
+        DrawTapHoldCircles(tapHoldCnt, App.Blue);
       }
     }
 
@@ -276,8 +275,9 @@ namespace Vnc.Viewer
       base.OnPaint(e);
 
       Graphics graphics = e.Graphics;
-      graphics.DrawLine(RedPen, mouseX - BigCircleRadius / 2, mouseY, mouseX + BigCircleRadius / 2, mouseY);
-      graphics.DrawLine(RedPen, mouseX, mouseY - BigCircleRadius / 2, mouseX, mouseY + BigCircleRadius / 2);
+      viewPen.Color = App.Red;
+      graphics.DrawLine(viewPen, mouseX - BigCircleRadius / 2, mouseY, mouseX + BigCircleRadius / 2, mouseY);
+      graphics.DrawLine(viewPen, mouseX, mouseY - BigCircleRadius / 2, mouseX, mouseY + BigCircleRadius / 2);
     }
 
     protected override void OnClosed(EventArgs e)

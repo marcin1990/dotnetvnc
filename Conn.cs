@@ -680,15 +680,19 @@ namespace Vnc.Viewer
     /// </summary>
     private void Start()
     {
+      // This is a background thread so the priority should be lower.
+      Thread.CurrentThread.Priority = ThreadPriority.BelowNormal;
+
       try
       {
         while(!termBgThread)
         {
+          // Yield to other threads so this thread does not dominate.
+          Thread.Sleep(App.Delta);
+
+          // Avoid the blocking ReadByte() if we have nothing to read.
           if(!stream.DataAvailable)
-          {
-            Thread.Sleep(App.Delta);
             continue;
-          }
 
           RfbServMsgType msgType = (RfbServMsgType)ReadByte();
           switch(msgType)

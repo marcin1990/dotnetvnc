@@ -54,7 +54,7 @@ namespace Vnc.Viewer
       else
       {
         tapHoldCnt++;
-        DrawTapHoldCircles(tapHoldCnt, BlueBrush);
+        DrawTapHoldCircles(tapHoldCnt, App.Blue);
       }
     }
 
