@@ -92,7 +92,7 @@ namespace Vnc.Viewer
       }
     }
 
-    protected void AboutClicked(object sender, EventArgs e)
+    private void AboutClicked(object sender, EventArgs e)
     {
       App.AboutBox();
     }
@@ -107,7 +107,7 @@ namespace Vnc.Viewer
       DialogResult = DialogResult.OK;
     }
 
-    protected void OkClicked(object sender, EventArgs e)
+    private void OkClicked(object sender, EventArgs e)
     {
       Ok();
     }
@@ -117,7 +117,7 @@ namespace Vnc.Viewer
       DialogResult = DialogResult.Cancel;
     }
 
-    protected void CancelClicked(object sender, EventArgs e)
+    private void CancelClicked(object sender, EventArgs e)
     {
       Cancel();
     }
@@ -246,24 +246,10 @@ namespace Vnc.Viewer
       viewOpts.ShareServ = !shareServBox.Checked;
     }
 
-    protected void SetPixelSize()
+    protected void SetOptions(ViewOpts viewOpts)
     {
-      switch(viewOpts.PixelSize)
-      {
-        case PixelSize.Unspec:
-          pixelSizeBox.SelectedIndex = 0;
-          break;
-        case PixelSize.Force8Bit:
-          pixelSizeBox.SelectedIndex = 1;
-          break;
-        case PixelSize.Force16Bit:
-          pixelSizeBox.SelectedIndex = 2;
-          break;
-      }
-    }
-
-    protected void SetOrientation()
-    {
+      this.viewOpts = viewOpts;
+      fullScrnBox.Checked = viewOpts.IsFullScrn;
       switch(viewOpts.Orientation)
       {
         case Orientation.Portrait:
@@ -279,14 +265,18 @@ namespace Vnc.Viewer
           rotateBox.SelectedIndex = 2;
           break;
       }
-    }
-
-    protected void SetOptions(ViewOpts viewOpts)
-    {
-      this.viewOpts = viewOpts;
-      fullScrnBox.Checked = viewOpts.IsFullScrn;
-      SetOrientation();
-      SetPixelSize();
+      switch(viewOpts.PixelSize)
+      {
+        case PixelSize.Unspec:
+          pixelSizeBox.SelectedIndex = 0;
+          break;
+        case PixelSize.Force8Bit:
+          pixelSizeBox.SelectedIndex = 1;
+          break;
+        case PixelSize.Force16Bit:
+          pixelSizeBox.SelectedIndex = 2;
+          break;
+      }
       viewOnlyBox.Checked = viewOpts.ViewOnly;
       shareServBox.Checked = !viewOpts.ShareServ;
     }
@@ -337,7 +327,7 @@ namespace Vnc.Viewer
       }
     }
 
-    protected void SaveDefsClicked(object sender, EventArgs e)
+    private void SaveDefsClicked(object sender, EventArgs e)
     {
       GetOptions();
       try
@@ -354,7 +344,7 @@ namespace Vnc.Viewer
       }
     }
 
-    protected void RestoreDefsClicked(object sender, EventArgs e)
+    private void RestoreDefsClicked(object sender, EventArgs e)
     {
       try
       {

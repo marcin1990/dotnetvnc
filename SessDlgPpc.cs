@@ -23,6 +23,12 @@
 
 namespace Vnc.Viewer
 {
+  /// <remarks>
+  ///   OO-wise this is not correct... A SessDlgPpc is not a SessDlgDt.
+  ///   Practically a SessDlgPpc shares the same code with SessDlgDt, at
+  ///   least for now. So SessDlgPpc inherits SessDlgDt. In the future this
+  ///   may change.
+  /// </remarks>
   internal class SessDlgPpc : SessDlgDt
   {
     internal SessDlgPpc() : base()

@@ -29,7 +29,14 @@ using System.Windows.Forms;
 
 namespace Vnc.Viewer
 {
-  /// <remarks>Prompt for the password.</remarks>
+  /// <remarks>
+  ///   This class prompts for the password.
+  ///   Please note that we don't use a factory to create an AuthDlg currently.
+  ///   This is because AuthDlg is very simple and creating all the classes
+  ///   (Factory, Dt, Ppc, etc.) seems to be too much for this task.
+  ///   If in the future this class becomes complicated then separating the
+  ///   device specific code will be necessary.
+  /// </remarks>
   internal class AuthDlg : Form
   {
     private string passwd = null;

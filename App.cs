@@ -233,7 +233,8 @@ Copyright (C) 1999 AT&T Laboratories Cambridge. All Rights Reserved.
         else
         {
           // This is a hack. If we don't have at least one window visible,
-          // new windows wil be created in the background on Pocket PC.
+          // new windows wil be created in the background on Pocket PCs.
+          // TODO: Is this necessary for Smartphones?
           Form dummy = new DummyForm();
           dummy.Show();
           NewConn();

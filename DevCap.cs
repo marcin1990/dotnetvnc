@@ -56,6 +56,7 @@ namespace Vnc.Viewer
       {
         try
         {
+          // TODO: Is there a smarter way to determine this is a Ppc or Sp?
           TabControl ctrl = new TabControl();
           ctrl.Dispose();
           Lvl = DevCapLvl.PocketPc;
@@ -69,6 +70,9 @@ namespace Vnc.Viewer
       }
       else
       {
+        // TODO: Currently this seems to be correct. That is, if Platform is
+        // not WinCE then we have full access to .NET Framework. If this ever
+        // changes this branch has to be modified.
         Lvl = DevCapLvl.Desktop;
         Res = ResLvl.Normal;
       }
