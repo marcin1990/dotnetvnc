@@ -269,11 +269,15 @@ namespace Vnc.Viewer
         return;
 
       ResetInputTimer();
-      OnKeyEvent(e.KeyCode, false);
+      if(e.KeyCode != Keys.F8) // Equals F8 after we just opened the text box.
+        OnKeyEvent(e.KeyCode, false);
     }
 
     private void OnInputKeyPress(object sender, KeyPressEventArgs e)
     {
+      if(e.Handled)
+        return;
+
       ResetInputTimer();
       OnKeyPress(e);
     }

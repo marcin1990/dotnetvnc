@@ -159,6 +159,14 @@ namespace Vnc.Viewer
       item.Text = "-";
       ctxMenu.MenuItems.Add(item);
       item = new MenuItem();
+      item.Text = App.GetStr("Shift down");
+      item.Click += keysHdr;
+      ctxMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("Shift up");
+      item.Click += keysHdr;
+      ctxMenu.MenuItems.Add(item);
+      item = new MenuItem();
       item.Text = App.GetStr("Ctrl-");
       item.Click += keysHdr;
       ctxMenu.MenuItems.Add(item);

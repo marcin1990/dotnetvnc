@@ -45,6 +45,7 @@ namespace Vnc.Viewer
     private const UInt32 EnterKey = 0x0000FF0D;
     private const UInt32 DelKey = 0x0000FFFF;
     private const UInt32 EscKey = 0x0000FF1B;
+    private const UInt32 ShiftKey = 0x0000FFE1;
 
     protected const byte NumTapHoldCircles = 8;
     protected byte TapHoldRadius = 3;
@@ -1012,7 +1013,8 @@ namespace Vnc.Viewer
         try
         {
           OnKeyEvent(keyChar, isDown);
-          SpecKeyUp();
+          if(!isDown)
+            SpecKeyUp();
         }
         catch(IOException)
         {
@@ -1212,7 +1214,16 @@ namespace Vnc.Viewer
       MenuItem item = (MenuItem)sender;
       try
       {
-        if(item.Text == App.GetStr("Ctrl-"))
+        if(item.Text == App.GetStr("Shift down"))
+        {
+          OnKeyEvent(ShiftKey, true);
+        }
+        else if(item.Text == App.GetStr("Shift up"))
+        {
+          OnKeyEvent(ShiftKey, false);
+          SpecKeyUp();
+        }
+        else if(item.Text == App.GetStr("Ctrl-"))
         {
           OnKeyEvent(CtrlKey, true);
           toKeyUpCtrl = true;
@@ -1237,6 +1248,8 @@ namespace Vnc.Viewer
           OnKeyEvent(DelKey, false);
           OnKeyEvent(AltKey, false);
           OnKeyEvent(CtrlKey, false);
+          toKeyUpCtrl = false;
+          toKeyUpAlt = false;
         }
         else if(item.Text == App.GetStr("Ctrl-Esc (Start Menu)"))
         {
@@ -1244,6 +1257,7 @@ namespace Vnc.Viewer
           OnKeyEvent(EscKey, true);
           OnKeyEvent(EscKey, false);
           OnKeyEvent(CtrlKey, false);
+          toKeyUpCtrl = false;
         }
       }
       catch(IOException)
@@ -1337,6 +1351,14 @@ namespace Vnc.Viewer
       CheckRotate(viewMenu);
 
       keysMenu.Text = App.GetStr("Keys");
+      item = new MenuItem();
+      item.Text = App.GetStr("Shift down");
+      item.Click += keysHdr;
+      keysMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("Shift up");
+      item.Click += keysHdr;
+      keysMenu.MenuItems.Add(item);
       item = new MenuItem();
       item.Text = App.GetStr("Ctrl-");
       item.Click += keysHdr;
