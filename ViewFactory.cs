@@ -21,46 +21,22 @@
 // whence you received this file, check http://www.uk.research.att.com/vnc or contact
 // the authors on vnc@uk.research.att.com for information on obtaining it.
 
+using System;
+
 namespace Vnc.Viewer
 {
-  internal class SessDlgPpc : SessDlgFullCf
+  internal class ViewFactory
   {
-    internal SessDlgPpc() : base()
+    internal static View Create(Conn conn, ConnOpts connOpts, UInt16 width, UInt16 height)
     {
-      AdjustSizes();
-    }
-
-    internal SessDlgPpc(ViewOpts viewOpts) : base(viewOpts)
-    {
-      AdjustSizes();
-    }
-
-    private void AdjustSizes()
-    {
-      if(App.DevCap.Res <= ResLvl.Normal)
-        return;
-
-      remoteEndPt.Height *= 2;
-      passwdBox.Height *= 2;
-      fullScrnBox.Height *= 2;
-      viewOnlyBox.Height *= 2;
-      shareServBox.Height *= 2;
-      okBtn.Height *= 2;
-      okBtn.Width *= 2;
-      cancelBtn.Height *= 2;
-      cancelBtn.Width *= 2;
-      aboutBtn.Height *= 2;
-      aboutBtn.Width *= 2;
-      saveConnOptsBtn.Height *= 2;
-      saveConnOptsBtn.Width *= 2;
-      saveConnOptsPwdBtn.Height *= 2;
-      saveConnOptsPwdBtn.Width *= 2;
-      loadConnOptsBtn.Height *= 2;
-      loadConnOptsBtn.Width *= 2;
-      saveDefsBtn.Height *= 2;
-      saveDefsBtn.Width *= 2;
-      restoreDefsBtn.Height *= 2;
-      restoreDefsBtn.Width *= 2;
+      if(App.DevCap.Lvl >= DevCapLvl.Desktop)
+        return new ViewDt(conn, connOpts, width, height);
+      else if(App.DevCap.Lvl >= DevCapLvl.PocketPc)
+        return new ViewPpc(conn, connOpts, width, height);
+      else if(App.DevCap.Lvl >= DevCapLvl.Smartphone)
+        return new ViewSp(conn, connOpts, width, height);
+      else
+        throw new NotSupportedException(App.GetStr("Device capability is unknown."));
     }
   }
 }

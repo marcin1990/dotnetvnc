@@ -204,7 +204,7 @@ namespace Vnc.Viewer
 
     private void CreateDisp()
     {
-      view = new View(this, opts, servInit.Width, servInit.Height);
+      view = ViewFactory.Create(this, opts, servInit.Width, servInit.Height);
       view.Text = desktopName;
       view.Closed += new EventHandler(ViewClosed);
       view.Show();

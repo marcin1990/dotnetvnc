@@ -35,50 +35,62 @@ namespace Vnc.Viewer
   ///   This class is responsible for maintaining the server view.
   ///   This is also responsible for accepting user input and send to the server accordingly.
   /// </remars>
-  internal class View : Form
+  internal abstract class View : Form
   {
     private const byte Delta = 50;
-    private const byte TapHoldRadius = 2;
-    private const byte NumTapHoldCircles = 8;
-    private const byte BigCircleRadius = 15;
-    private const byte TapHoldCircleRadius = 3;
-    private const UInt32 CtrlKey = 0x0000FFE3;
-    private const UInt32 AltKey = 0x0000FFE9;
-    private const UInt32 DelKey = 0x0000FFFF;
-    private const UInt32 EscKey = 0x0000FF1B;
 
-    // .NET CF does not have SystemBrushes...
+    protected const UInt32 CtrlKey = 0x0000FFE3;
+    protected const UInt32 AltKey = 0x0000FFE9;
+    protected const UInt32 EnterKey = 0x0000FF0D;
+    protected const UInt32 DelKey = 0x0000FFFF;
+    protected const UInt32 EscKey = 0x0000FF1B;
+
+    protected const byte NumTapHoldCircles = 8;
+    protected byte TapHoldRadius = 3;
+    protected byte BigCircleRadius = 15;
+    protected byte TapHoldCircleRadius = 3;
+
+    // .NET CF does not have SystemBrushes and Pens...
     private static readonly Brush CtrlBrush = new SolidBrush(SystemColors.Control);
-
-    // .NET CF does not have Brushes and Pens...
     private static readonly Pen BlackPen = new Pen(App.Black);
-    private static readonly Brush RedBrush = new SolidBrush(App.Red);
-    private static readonly Brush BlueBrush = new SolidBrush(App.Blue);
 
-    private System.Windows.Forms.Timer timer = new System.Windows.Forms.Timer();
-    private HScrollBar hScrlBar = new HScrollBar();
-    private VScrollBar vScrlBar = new VScrollBar();
-    private MainMenu menu = new MainMenu();
-    private ContextMenu ctxMenu = new ContextMenu();
+    // .NET CF does not have Brushes...
+    protected static readonly Brush RedBrush = new SolidBrush(App.Red);
+    protected static readonly Brush BlueBrush = new SolidBrush(App.Blue);
+
+    protected System.Windows.Forms.Timer timer = new System.Windows.Forms.Timer();
+    protected HScrollBar hScrlBar = new HScrollBar();
+    protected VScrollBar vScrlBar = new VScrollBar();
+
+    protected MainMenu menu = new MainMenu();
+    protected MenuItem connMenu = new MenuItem();
+    protected MenuItem newConnItem = new MenuItem();
+    protected MenuItem refreshItem = new MenuItem();
+    protected MenuItem closeConnItem = new MenuItem();
+    protected MenuItem viewMenu = new MenuItem();
+    protected MenuItem keysMenu = new MenuItem();
+    protected MenuItem optionsMenu = new MenuItem();
+    protected MenuItem aboutItem = new MenuItem();
+
     private Bitmap frameBuf = null;
     private Graphics frameBufGraphics = null;
     private Conn conn = null;
     private Hashtable brushTable = new Hashtable();
 
-    private ConnOpts connOpts = null;
-    private UInt16 frameBufWidth = 0;
-    private UInt16 frameBufHeight = 0;
+    protected ConnOpts connOpts = null;
+    protected UInt16 frameBufWidth = 0;
+    protected UInt16 frameBufHeight = 0;
 
-    // Maintain the state of the mouse on our own.
-    // On PPC the MouseButtons property does not reflect the state
-    // correctly if ContextMenu is non-null.
-    private int mouseX = 0;
-    private int mouseY = 0;
-    private bool leftBtnDown = false;
-    private UInt16 tapHoldCnt = 0;
+    protected int mouseX = 0;
+    protected int mouseY = 0;
+    protected UInt16 tapHoldCnt = 0;
 
     private bool toKeyUpCtrl = false;
     private bool toKeyUpAlt = false;
+
+    protected EventHandler rotateHdr = null;
+    protected EventHandler fullScrnHdr = null;
+    protected EventHandler keysHdr = null;
 
     // "Real" coordinates => server coordinates.
     // "FrameBuf" coordinates => coordinates of in-memory buffer. This is the same as
@@ -247,12 +259,6 @@ namespace Vnc.Viewer
       }
     }
 
-    private void Scrled(object sender, EventArgs e)
-    {
-      // TODO: Anything smarter?
-      Invalidate();
-    }
-
     internal void FillRect(Rectangle rect, Color color)
     {
       // Creating brushes is very costly in terms of processing time.
@@ -289,6 +295,16 @@ namespace Vnc.Viewer
       // TODO: This does not work. It hangs on PPC. Need to find out why.
       // RealToScrnRect(ref rect);
       // Invalidate(rect);
+    }
+
+    internal void LockFrameBuf()
+    {
+      Monitor.Enter(this);
+    }
+
+    internal void UnlockFrameBuf()
+    {
+      Monitor.Exit(this);
     }
 
     // HScrlBarVal and VScrlBarVal are needed when we resize the window.
@@ -515,6 +531,12 @@ namespace Vnc.Viewer
       ResizeCore();
     }
 
+    private void Scrled(object sender, EventArgs e)
+    {
+      // TODO: Anything smarter?
+      Invalidate();
+    }
+
     private void RotateClicked(object sender, EventArgs e)
     {
       Orientation newOrientation;
@@ -597,10 +619,7 @@ namespace Vnc.Viewer
       HScrlBarVal = newHScrlBarVal;
       VScrlBarVal = newVScrlBarVal;
 
-      for(int i = 0; i < menu.MenuItems.Count; i++)
-        if(menu.MenuItems[i].Text == App.GetStr("View"))
-          CheckRotate(menu.MenuItems[i]);
-      CheckRotate(ctxMenu);
+      CheckRotate();
     }
 
     private void CloseClicked(object sender, EventArgs e)
@@ -627,13 +646,18 @@ namespace Vnc.Viewer
       ClientSize = new Size(frameBufWidth, frameBufHeight);
     }
 
-    private void FullScrnClicked(object sender, EventArgs e)
+    protected void ToggleFullScrn()
     {
       connOpts.ViewOpts.IsFullScrn = !connOpts.ViewOpts.IsFullScrn;
       if(connOpts.ViewOpts.IsFullScrn)
         FullScrn();
       else
         QuitFullScrn();
+    }
+
+    private void FullScrnClicked(object sender, EventArgs e)
+    {
+      ToggleFullScrn();
     }
 
     protected override void OnLoad(EventArgs e)
@@ -675,34 +699,9 @@ namespace Vnc.Viewer
       // Don't erase the background to reduce flicker.
     }
 
-    internal void LockFrameBuf()
-    {
-      Monitor.Enter(this);
-    }
+    protected abstract void Ticked(object sender, EventArgs e);
 
-    internal void UnlockFrameBuf()
-    {
-      Monitor.Exit(this);
-    }
-
-    private void OnMouseEvent(int x, int y, bool leftBtnDown, bool rightBtnDown)
-    {
-      if(connOpts.ViewOpts.ViewOnly)
-        return;
-
-      ScrnToRealXY(ref x, ref y);
-      byte[] msg = RfbProtoUtil.GetPointerEventMsg((UInt16)x, (UInt16)y, leftBtnDown, rightBtnDown);
-      try
-      {
-        conn.WriteBytes(msg, RfbCliMsgType.PointerEvent);
-      }
-      catch(IOException)
-      {
-        Close();
-      }
-    }
-
-    private void DrawTapHoldCircles(UInt16 numCircles, Brush brush)
+    protected void DrawTapHoldCircles(UInt16 numCircles, Brush brush)
     {
       Graphics graphics = CreateGraphics();
 
@@ -737,347 +736,16 @@ namespace Vnc.Viewer
       graphics.Dispose();
     }
 
-    private void SimRightClick()
-    {
-      timer.Enabled = false;
-      Invalidate(); // TODO: Calculate the area to invalidate.
-
-      // It was a tap-and-hold and the left button was not clicked.
-      leftBtnDown = false;
-
-      // Simulate a right click.
-      OnMouseEvent(mouseX, mouseY, leftBtnDown, true);
-      OnMouseEvent(mouseX, mouseY, leftBtnDown, false);
-    }
-
-    private void Ticked(object sender, EventArgs e)
-    {
-      if(!timer.Enabled)
-      {
-        // I am not entirely sure whether this will ever occur.
-        // One possibility is that the Timer event is queued
-        // before OnMouseUp or OnMouseMove disables the timer.
-        return;
-      }
-
-      if(connOpts.ViewOpts.IsFullScrn)
-      {
-        if(tapHoldCnt > 2 * NumTapHoldCircles)
-          SimRightClick();
-        else
-        {
-          tapHoldCnt++;
-          Brush brush = (tapHoldCnt > NumTapHoldCircles)? BlueBrush : RedBrush;
-          UInt16 numCircles = (UInt16)((tapHoldCnt > NumTapHoldCircles)? tapHoldCnt - NumTapHoldCircles : tapHoldCnt);
-          DrawTapHoldCircles(numCircles, brush);
-        }
-      }
-      else
-      {
-        if(tapHoldCnt > NumTapHoldCircles)
-          SimRightClick();
-        else
-        {
-          tapHoldCnt++;
-          DrawTapHoldCircles(tapHoldCnt, BlueBrush);
-        }
-      }
-    }
-
-    protected override void OnMouseUp(MouseEventArgs e)
-    {
-      base.OnMouseUp(e);
-
-      // We only monitor the left mouse button.
-      if((e.Button & MouseButtons.Left) == 0)
-        return;
-
-      int mouseX = this.mouseX;
-      int mouseY = this.mouseY;
-      bool leftBtnDown = this.leftBtnDown;
-
-      this.mouseX = e.X;
-      this.mouseY = e.Y;
-      this.leftBtnDown = false;
-
-      if(timer.Enabled)
-      {
-        timer.Enabled = false;
-        Invalidate(); // TODO: Calculate the area to invalidate.
-
-        if(connOpts.ViewOpts.IsFullScrn && tapHoldCnt > NumTapHoldCircles)
-        {
-          // I don't have a clue why I need to lock the frame buffer.
-          // But the PPC hangs if I don't do so before showing the context menu.
-          LockFrameBuf();
-          ctxMenu.Show(this, new Point(this.mouseX, this.mouseY));
-          UnlockFrameBuf();
-        }
-        else
-        {
-          // Send the "delayed" mouse event.
-          OnMouseEvent(mouseX, mouseY, leftBtnDown, false);
-          OnMouseEvent(this.mouseX, this.mouseY, this.leftBtnDown, false);
-        }
-      }
-      else
-        OnMouseEvent(this.mouseX, this.mouseY, this.leftBtnDown, false);
-    }
-
-    protected override void OnMouseDown(MouseEventArgs e)
-    {
-      base.OnMouseDown(e);
-
-      // We only monitor the left mouse button.
-      if((e.Button & MouseButtons.Left) == 0)
-        return;
-
-      mouseX = e.X;
-      mouseY = e.Y;
-      leftBtnDown = true;
-      timer.Enabled = true; // Tap-and-Hold active.
-      tapHoldCnt = 0;
-    }
-
-    protected override void OnMouseMove(MouseEventArgs e)
-    {
-      base.OnMouseMove(e);
-
-      if(timer.Enabled)
-      {
-        if(e.X > mouseX - TapHoldRadius && e.X < mouseX + TapHoldRadius &&
-           e.Y > mouseY - TapHoldRadius && e.Y < mouseY + TapHoldRadius)
-          return; // Tap-and-Hold is active and valid. Take no action.
-
-        // "Far away" from where the user taps, dismiss tap-and-hold.
-        timer.Enabled = false;
-        Invalidate(); // TODO: Calculate the area to invalidate.
-
-        // Send the "delayed" mouse event.
-        OnMouseEvent(mouseX, mouseY, leftBtnDown, false);
-      }
-
-      mouseX = e.X;
-      mouseY = e.Y;
-      OnMouseEvent(mouseX, mouseY, leftBtnDown, false);
-    }
-
-    private void OnKeyEvent(KeyEventArgs e, bool isDown)
+    protected void OnMouseEvent(int x, int y, bool leftBtnDown, bool rightBtnDown)
     {
       if(connOpts.ViewOpts.ViewOnly)
         return;
 
-      UInt32 key = 0;
-      bool isProcessed = true;
-      switch(e.KeyCode)
-      {
-        case Keys.Enter:
-          key = 0x0000FF0D;
-          break;
-        case Keys.Tab:
-          key = 0x0000FF09;
-          break;
-        case Keys.Escape:
-          key = EscKey;
-          break;
-        case Keys.ShiftKey:
-          key = 0x0000FFE1;
-          break;
-        case Keys.ControlKey:
-          key = CtrlKey;
-          break;
-        case Keys.Menu:
-          key = AltKey;
-          break;
-        case Keys.Insert:
-          key = 0x0000FF63;
-          break;
-        case Keys.Delete:
-          key = DelKey;
-          break;
-        case Keys.Home:
-          key = 0x0000FF50;
-          break;
-        case Keys.End:
-          key = 0x0000FF57;
-          break;
-        case Keys.PageUp:
-          key = 0x0000FF55;
-          break;
-        case Keys.PageDown:
-          key = 0x0000FF56;
-          break;
-        case Keys.Left:
-          switch(connOpts.ViewOpts.Orientation)
-          {
-            case Orientation.Landscape90:
-              key = 0x0000FF52;
-              break;
-            case Orientation.Portrait180:
-              key = 0x0000FF53;
-              break;
-            case Orientation.Landscape270:
-              key = 0x0000FF54;
-              break;
-            default:
-              key = 0x0000FF51;
-              break;
-          }
-          break;
-        case Keys.Up:
-          switch(connOpts.ViewOpts.Orientation)
-          {
-            case Orientation.Landscape90:
-              key = 0x0000FF53;
-              break;
-            case Orientation.Portrait180:
-              key = 0x0000FF54;
-              break;
-            case Orientation.Landscape270:
-              key = 0x0000FF51;
-              break;
-            default:
-              key = 0x0000FF52;
-              break;
-          }
-          break;
-        case Keys.Right:
-          switch(connOpts.ViewOpts.Orientation)
-          {
-            case Orientation.Landscape90:
-              key = 0x0000FF54;
-              break;
-            case Orientation.Portrait180:
-              key = 0x0000FF51;
-              break;
-            case Orientation.Landscape270:
-              key = 0x0000FF52;
-              break;
-            default:
-              key = 0x0000FF53;
-              break;
-          }
-          break;
-        case Keys.Down:
-          switch(connOpts.ViewOpts.Orientation)
-          {
-            case Orientation.Landscape90:
-              key = 0x0000FF51;
-              break;
-            case Orientation.Portrait180:
-              key = 0x0000FF52;
-              break;
-            case Orientation.Landscape270:
-              key = 0x0000FF53;
-              break;
-            default:
-              key = 0x0000FF54;
-              break;
-          }
-          break;
-        case Keys.F1:
-        case Keys.F2:
-        case Keys.F3:
-        case Keys.F4:
-        case Keys.F5:
-        case Keys.F6:
-        case Keys.F7:
-        case Keys.F8:
-        case Keys.F9:
-        case Keys.F10:
-        case Keys.F11:
-        case Keys.F12:
-          key = 0x0000FFBE + ((UInt32)e.KeyCode - (UInt32)Keys.F1);
-          break;
-        default:
-          isProcessed = false;
-          break;
-      }
-
-      if(isProcessed)
-      {
-        try
-        {
-          byte[] msg = RfbProtoUtil.GetKeyEventMsg(isDown, key);
-          conn.WriteBytes(msg, RfbCliMsgType.KeyEvent);
-          SpecKeyUp();
-        }
-        catch(IOException)
-        {
-          Close();
-        }
-      }
-    }
-
-    private void SpecKeyUp()
-    {
-      byte[] msg;
-      if(toKeyUpAlt)
-      {
-        msg = RfbProtoUtil.GetKeyEventMsg(false, AltKey);
-        conn.WriteBytes(msg, RfbCliMsgType.KeyEvent);
-        toKeyUpAlt = false;
-      }
-      if(toKeyUpCtrl)
-      {
-        msg = RfbProtoUtil.GetKeyEventMsg(false, CtrlKey);
-        conn.WriteBytes(msg, RfbCliMsgType.KeyEvent);
-        toKeyUpCtrl = false;
-      }
-    }
-
-    protected override void OnKeyUp(KeyEventArgs e)
-    {
-      base.OnKeyUp(e);
-      if(e.Handled)
-        return;
-
-      OnKeyEvent(e, false);
-    }
-
-    protected override void OnKeyDown(KeyEventArgs e)
-    {
-      base.OnKeyDown(e);
-      if(e.Handled)
-        return;
-
-      OnKeyEvent(e, true);
-    }
-
-    protected override void OnKeyPress(KeyPressEventArgs e)
-    {
-      base.OnKeyPress(e);
-      if(e.Handled)
-        return;
-
-      if(connOpts.ViewOpts.ViewOnly)
-        return;
-
+      ScrnToRealXY(ref x, ref y);
+      byte[] msg = RfbProtoUtil.GetPointerEventMsg((UInt16)x, (UInt16)y, leftBtnDown, rightBtnDown);
       try
       {
-        byte[] msg;
-        if(Char.IsLetterOrDigit(e.KeyChar) ||
-           Char.IsPunctuation(e.KeyChar) ||
-           Char.IsWhiteSpace(e.KeyChar) ||
-           e.KeyChar == '~' || e.KeyChar == '`' || e.KeyChar == '<' || e.KeyChar == '>' ||
-           e.KeyChar == '|' || e.KeyChar == '=' || e.KeyChar == '+' || e.KeyChar == '$' ||
-           e.KeyChar == '^')
-        {
-          msg = RfbProtoUtil.GetKeyEventMsg(true, (UInt32)e.KeyChar);
-          conn.WriteBytes(msg, RfbCliMsgType.KeyEvent);
-          msg = RfbProtoUtil.GetKeyEventMsg(false, (UInt32)e.KeyChar);
-          conn.WriteBytes(msg, RfbCliMsgType.KeyEvent);
-        }
-        else if(e.KeyChar == '\b')
-        {
-          UInt32 key = (UInt32)e.KeyChar;
-          key |= 0x0000FF00;
-          msg = RfbProtoUtil.GetKeyEventMsg(true, key);
-          conn.WriteBytes(msg, RfbCliMsgType.KeyEvent);
-          msg = RfbProtoUtil.GetKeyEventMsg(false, key);
-          conn.WriteBytes(msg, RfbCliMsgType.KeyEvent);
-        }
-        SpecKeyUp();
+        conn.WriteBytes(msg, RfbCliMsgType.PointerEvent);
       }
       catch(IOException)
       {
@@ -1085,7 +753,32 @@ namespace Vnc.Viewer
       }
     }
 
-    private void CheckRotate(Menu menu)
+    protected void OnKeyEvent(UInt32 keyChar, bool isDown)
+    {
+      byte[] msg = RfbProtoUtil.GetKeyEventMsg(isDown, keyChar);
+      conn.WriteBytes(msg, RfbCliMsgType.KeyEvent);
+    }
+
+    protected void SpecKeyUp()
+    {
+      if(toKeyUpAlt)
+      {
+        OnKeyEvent(AltKey, false);
+        toKeyUpAlt = false;
+      }
+      if(toKeyUpCtrl)
+      {
+        OnKeyEvent(CtrlKey, false);
+        toKeyUpCtrl = false;
+      }
+    }
+
+    protected virtual void CheckRotate()
+    {
+      CheckRotate(viewMenu);
+    }
+
+    protected void CheckRotate(Menu menu)
     {
       MenuItem normal = null;
       MenuItem rotateCW = null;
@@ -1133,17 +826,11 @@ namespace Vnc.Viewer
     private void ViewOnlyClicked(object sender, EventArgs e)
     {
       connOpts.ViewOpts.ViewOnly = !connOpts.ViewOpts.ViewOnly;
-      for(int i = 0; i < menu.MenuItems.Count; i++)
+      for(int i = 0; i < optionsMenu.MenuItems.Count; i++)
       {
-        MenuItem item = menu.MenuItems[i];
-        if(item.Text != App.GetStr("Options"))
-          continue;
-        for(int j = 0; j < item.MenuItems.Count; j++)
-        {
-          MenuItem subItem = item.MenuItems[j];
-          if(subItem.Text == App.GetStr("View only"))
-            subItem.Checked = connOpts.ViewOpts.ViewOnly;
-        }
+        MenuItem item = optionsMenu.MenuItems[i];
+        if(item.Text == App.GetStr("View only"))
+          item.Checked = connOpts.ViewOpts.ViewOnly;
       }
     }
 
@@ -1178,26 +865,20 @@ namespace Vnc.Viewer
       MenuItem serverDecides = null;
       MenuItem force8Bit = null;
       MenuItem force16Bit = null;
-      for(int i = 0; i < menu.MenuItems.Count; i++)
+      for(int i = 0; i < optionsMenu.MenuItems.Count; i++)
       {
-        MenuItem item = menu.MenuItems[i];
-        if(item.Text != App.GetStr("Options"))
+        MenuItem item = optionsMenu.MenuItems[i];
+        if(item.Text != App.GetStr("Pixel size"))
           continue;
         for(int j = 0; j < item.MenuItems.Count; j++)
         {
           MenuItem subItem = item.MenuItems[j];
-          if(subItem.Text != App.GetStr("Pixel size"))
-            continue;
-          for(int k = 0; k < subItem.MenuItems.Count; k++)
-          {
-            MenuItem smallItem = subItem.MenuItems[k];
-            if(smallItem.Text == App.GetStr("Server decides"))
-              serverDecides = smallItem;
-            else if(smallItem.Text == App.GetStr("Force 8-bit"))
-              force8Bit = smallItem;
-            else if(smallItem.Text == App.GetStr("Force 16-bit"))
-              force16Bit = smallItem;
-          }
+          if(subItem.Text == App.GetStr("Server decides"))
+            serverDecides = subItem;
+          else if(subItem.Text == App.GetStr("Force 8-bit"))
+            force8Bit = subItem;
+          else if(subItem.Text == App.GetStr("Force 16-bit"))
+            force16Bit = subItem;
         }
       }
       serverDecides.Checked = false;
@@ -1226,100 +907,44 @@ namespace Vnc.Viewer
       MenuItem item = (MenuItem)sender;
       try
       {
-        byte[] msg;
         if(item.Text == App.GetStr("Ctrl-"))
         {
-          msg = RfbProtoUtil.GetKeyEventMsg(true, CtrlKey);
-          conn.WriteBytes(msg, RfbCliMsgType.KeyEvent);
+          OnKeyEvent(CtrlKey, true);
           toKeyUpCtrl = true;
         }
         else if(item.Text == App.GetStr("Alt-"))
         {
-          msg = RfbProtoUtil.GetKeyEventMsg(true, AltKey);
-          conn.WriteBytes(msg, RfbCliMsgType.KeyEvent);
+          OnKeyEvent(AltKey, true);
           toKeyUpAlt = true;
         }
         else if(item.Text == App.GetStr("Ctrl-Alt-"))
         {
-          msg = RfbProtoUtil.GetKeyEventMsg(true, CtrlKey);
-          conn.WriteBytes(msg, RfbCliMsgType.KeyEvent);
+          OnKeyEvent(CtrlKey, true);
           toKeyUpCtrl = true;
-          msg = RfbProtoUtil.GetKeyEventMsg(true, AltKey);
-          conn.WriteBytes(msg, RfbCliMsgType.KeyEvent);
+          OnKeyEvent(AltKey, true);
           toKeyUpAlt = true;
         }
         else if(item.Text == App.GetStr("Ctrl-Alt-Del"))
         {
-          msg = RfbProtoUtil.GetKeyEventMsg(true, CtrlKey);
-          conn.WriteBytes(msg, RfbCliMsgType.KeyEvent);
-          msg = RfbProtoUtil.GetKeyEventMsg(true, AltKey);
-          conn.WriteBytes(msg, RfbCliMsgType.KeyEvent);
-          msg = RfbProtoUtil.GetKeyEventMsg(true, DelKey);
-          conn.WriteBytes(msg, RfbCliMsgType.KeyEvent);
-          msg = RfbProtoUtil.GetKeyEventMsg(false, DelKey);
-          conn.WriteBytes(msg, RfbCliMsgType.KeyEvent);
-          msg = RfbProtoUtil.GetKeyEventMsg(false, AltKey);
-          conn.WriteBytes(msg, RfbCliMsgType.KeyEvent);
-          msg = RfbProtoUtil.GetKeyEventMsg(false, CtrlKey);
-          conn.WriteBytes(msg, RfbCliMsgType.KeyEvent);
+          OnKeyEvent(CtrlKey, true);
+          OnKeyEvent(AltKey, true);
+          OnKeyEvent(DelKey, true);
+          OnKeyEvent(DelKey, false);
+          OnKeyEvent(AltKey, false);
+          OnKeyEvent(CtrlKey, false);
         }
         else if(item.Text == App.GetStr("Ctrl-Esc (Start Menu)"))
         {
-          msg = RfbProtoUtil.GetKeyEventMsg(true, CtrlKey);
-          conn.WriteBytes(msg, RfbCliMsgType.KeyEvent);
-          msg = RfbProtoUtil.GetKeyEventMsg(true, EscKey);
-          conn.WriteBytes(msg, RfbCliMsgType.KeyEvent);
-          msg = RfbProtoUtil.GetKeyEventMsg(false, EscKey);
-          conn.WriteBytes(msg, RfbCliMsgType.KeyEvent);
-          msg = RfbProtoUtil.GetKeyEventMsg(false, CtrlKey);
-          conn.WriteBytes(msg, RfbCliMsgType.KeyEvent);
+          OnKeyEvent(CtrlKey, true);
+          OnKeyEvent(EscKey, true);
+          OnKeyEvent(EscKey, false);
+          OnKeyEvent(CtrlKey, false);
         }
       }
       catch(IOException)
       {
         Close();
       }
-    }
-
-    private void SaveConnOpts(bool savePwd)
-    {
-      SaveFileDialog dlg = new SaveFileDialog();
-      dlg.Filter = App.GetStr("VNC files (*.vncxml)|*.vncxml|All files (*.*)|*.*");
-      if(dlg.ShowDialog() != DialogResult.OK)
-        return;
-
-      try
-      {
-        connOpts.Save(dlg.FileName, savePwd);
-      }
-      catch(IOException)
-      {
-        MessageBox.Show(App.GetStr("Unable to save!"),
-                        App.GetStr("Error"),
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Exclamation,
-                        MessageBoxDefaultButton.Button1);
-      }
-    }
-
-    private void SaveConnOptsClicked(object sender, EventArgs e)
-    {
-      SaveConnOpts(false);
-    }
-
-    private void SaveConnOptsPwdClicked(object sender, EventArgs e)
-    {
-      SaveConnOpts(true);
-    }
-
-    private void LoadConnOptsClicked(object sender, EventArgs e)
-    {
-      OpenFileDialog dlg = new OpenFileDialog();
-      dlg.Filter = App.GetStr("VNC files (*.vncxml)|*.vncxml|All files (*.*)|*.*");
-      if(dlg.ShowDialog() != DialogResult.OK)
-        return;
-
-      App.NewConn(dlg.FileName);
     }
 
     private void AboutClicked(object sender, EventArgs e)
@@ -1355,163 +980,94 @@ namespace Vnc.Viewer
 
       MenuItem item;
       MenuItem subItem;
-      MenuItem smallItem;
-      EventHandler rotateHdr = new EventHandler(RotateClicked);
+      rotateHdr = new EventHandler(RotateClicked);
+      fullScrnHdr = new EventHandler(FullScrnClicked);
+      keysHdr = new EventHandler(KeysClicked);
       EventHandler pixelSizeHdr = new EventHandler(PixelSizeClicked);
 
-      item = new MenuItem();
-      item.Text = App.GetStr("Connection");
-      menu.MenuItems.Add(item);
-      subItem = new MenuItem();
-      subItem.Text = App.GetStr("New...");
-      subItem.Click += new EventHandler(NewConnClicked);
-      item.MenuItems.Add(subItem);
-      subItem = new MenuItem();
-      subItem.Text = App.GetStr("Open...");
-      subItem.Click += new EventHandler(LoadConnOptsClicked);
-      item.MenuItems.Add(subItem);
-      subItem = new MenuItem();
-      subItem.Text = App.GetStr("Save as...");
-      subItem.Click += new EventHandler(SaveConnOptsClicked);
-      item.MenuItems.Add(subItem);
-      subItem = new MenuItem();
-      subItem.Text = App.GetStr("Save as (with password)...");
-      subItem.Click += new EventHandler(SaveConnOptsPwdClicked);
-      item.MenuItems.Add(subItem);
-      subItem = new MenuItem();
-      subItem.Text = App.GetStr("Refresh whole screen");
-      subItem.Click += new EventHandler(RefreshClicked);
-      item.MenuItems.Add(subItem);
-      subItem = new MenuItem();
-      subItem.Text = App.GetStr("Close");
-      subItem.Click += new EventHandler(CloseClicked);
-      item.MenuItems.Add(subItem);
+      connMenu.Text = App.GetStr("Connection");
+      newConnItem.Text = App.GetStr("New...");
+      newConnItem.Click += new EventHandler(NewConnClicked);
+      refreshItem.Text = App.GetStr("Refresh whole screen");
+      refreshItem.Click += new EventHandler(RefreshClicked);
+      closeConnItem.Text = App.GetStr("Close");
+      closeConnItem.Click += new EventHandler(CloseClicked);
 
+      viewMenu.Text = App.GetStr("View");
       item = new MenuItem();
-      item.Text = App.GetStr("View");
-      menu.MenuItems.Add(item);
-      subItem = new MenuItem();
-      subItem.Text = App.GetStr("Full Screen");
-      subItem.Checked = false; // If we see this we are not using full screen.
-      subItem.Click += new EventHandler(FullScrnClicked);
-      item.MenuItems.Add(subItem);
-      subItem = new MenuItem();
-      subItem.Text = App.GetStr("Portrait");
-      subItem.Click += rotateHdr;
-      item.MenuItems.Add(subItem);
-      subItem = new MenuItem();
-      subItem.Text = App.GetStr("Screen rotated clockwise");
-      subItem.Click += rotateHdr;
-      item.MenuItems.Add(subItem);
-      subItem = new MenuItem();
-      subItem.Text = App.GetStr("Screen rotated counter-clockwise");
-      subItem.Click += rotateHdr;
-      item.MenuItems.Add(subItem);
-      subItem = new MenuItem();
-      subItem.Text = App.GetStr("Upside down");
-      subItem.Click += rotateHdr;
-      item.MenuItems.Add(subItem);
-      CheckRotate(item);
+      item.Text = App.GetStr("Full Screen");
+      item.Checked = false; // If we see this we are not using full screen.
+      item.Click += fullScrnHdr;
+      viewMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = "-";
+      viewMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("Portrait");
+      item.Click += rotateHdr;
+      viewMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("Screen rotated clockwise");
+      item.Click += rotateHdr;
+      viewMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("Screen rotated counter-clockwise");
+      item.Click += rotateHdr;
+      viewMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("Upside down");
+      item.Click += rotateHdr;
+      viewMenu.MenuItems.Add(item);
+      CheckRotate(viewMenu);
 
+      keysMenu.Text = App.GetStr("Keys");
       item = new MenuItem();
-      item.Text = App.GetStr("Keys");
-      menu.MenuItems.Add(item);
-      subItem = new MenuItem();
-      subItem.Text = App.GetStr("Ctrl-");
-      subItem.Click += new EventHandler(KeysClicked);
-      item.MenuItems.Add(subItem);
-      subItem = new MenuItem();
-      subItem.Text = App.GetStr("Alt-");
-      subItem.Click += new EventHandler(KeysClicked);
-      item.MenuItems.Add(subItem);
-      subItem = new MenuItem();
-      subItem.Text = App.GetStr("Ctrl-Alt-");
-      subItem.Click += new EventHandler(KeysClicked);
-      item.MenuItems.Add(subItem);
-      subItem = new MenuItem();
-      subItem.Text = App.GetStr("Ctrl-Alt-Del");
-      subItem.Click += new EventHandler(KeysClicked);
-      item.MenuItems.Add(subItem);
-      subItem = new MenuItem();
-      subItem.Text = App.GetStr("Ctrl-Esc (Start Menu)");
-      subItem.Click += new EventHandler(KeysClicked);
-      item.MenuItems.Add(subItem);
+      item.Text = App.GetStr("Ctrl-");
+      item.Click += keysHdr;
+      keysMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("Alt-");
+      item.Click += keysHdr;
+      keysMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("Ctrl-Alt-");
+      item.Click += keysHdr;
+      keysMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("Ctrl-Alt-Del");
+      item.Click += keysHdr;
+      keysMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("Ctrl-Esc (Start Menu)");
+      item.Click += keysHdr;
+      keysMenu.MenuItems.Add(item);
 
+      optionsMenu.Text = App.GetStr("Options");
       item = new MenuItem();
-      item.Text = App.GetStr("Options");
-      menu.MenuItems.Add(item);
+      item.Text = App.GetStr("Pixel size");
+      optionsMenu.MenuItems.Add(item);
       subItem = new MenuItem();
-      subItem.Text = App.GetStr("Pixel size");
+      subItem.Text = App.GetStr("Server decides");
+      subItem.Click += pixelSizeHdr;
       item.MenuItems.Add(subItem);
-      smallItem = new MenuItem();
-      smallItem.Text = App.GetStr("Server decides");
-      smallItem.Click += pixelSizeHdr;
-      subItem.MenuItems.Add(smallItem);
-      smallItem = new MenuItem();
-      smallItem.Text = App.GetStr("Force 8-bit");
-      smallItem.Click += pixelSizeHdr;
-      subItem.MenuItems.Add(smallItem);
-      smallItem = new MenuItem();
-      smallItem.Text = App.GetStr("Force 16-bit");
-      smallItem.Click += pixelSizeHdr;
-      subItem.MenuItems.Add(smallItem);
+      subItem = new MenuItem();
+      subItem.Text = App.GetStr("Force 8-bit");
+      subItem.Click += pixelSizeHdr;
+      item.MenuItems.Add(subItem);
+      subItem = new MenuItem();
+      subItem.Text = App.GetStr("Force 16-bit");
+      subItem.Click += pixelSizeHdr;
+      item.MenuItems.Add(subItem);
       CheckPixelSize();
-      subItem = new MenuItem();
-      subItem.Text = App.GetStr("View only");
-      subItem.Checked = connOpts.ViewOpts.ViewOnly;
-      subItem.Click += new EventHandler(ViewOnlyClicked);
-      item.MenuItems.Add(subItem);
-
       item = new MenuItem();
-      item.Text = App.GetStr("Help");
-      menu.MenuItems.Add(item);
-      subItem = new MenuItem();
-      subItem.Text = App.GetStr("About");
-      subItem.Click += new EventHandler(AboutClicked);
-      item.MenuItems.Add(subItem);
+      item.Text = App.GetStr("View only");
+      item.Checked = connOpts.ViewOpts.ViewOnly;
+      item.Click += new EventHandler(ViewOnlyClicked);
+      optionsMenu.MenuItems.Add(item);
 
-      subItem = new MenuItem();
-      subItem.Text = App.GetStr("Full Screen");
-      subItem.Checked = true; // If we see this we are using full screen.
-      subItem.Click += new EventHandler(FullScrnClicked);
-      ctxMenu.MenuItems.Add(subItem);
-      subItem = new MenuItem();
-      subItem.Text = App.GetStr("Portrait");
-      subItem.Click += rotateHdr;
-      ctxMenu.MenuItems.Add(subItem);
-      subItem = new MenuItem();
-      subItem.Text = App.GetStr("Screen rotated clockwise");
-      subItem.Click += rotateHdr;
-      ctxMenu.MenuItems.Add(subItem);
-      subItem = new MenuItem();
-      subItem.Text = App.GetStr("Screen rotated counter-clockwise");
-      subItem.Click += rotateHdr;
-      ctxMenu.MenuItems.Add(subItem);
-      subItem = new MenuItem();
-      subItem.Text = App.GetStr("Upside down");
-      subItem.Click += rotateHdr;
-      ctxMenu.MenuItems.Add(subItem);
-      subItem = new MenuItem();
-      subItem.Text = App.GetStr("Ctrl-");
-      subItem.Click += new EventHandler(KeysClicked);
-      ctxMenu.MenuItems.Add(subItem);
-      subItem = new MenuItem();
-      subItem.Text = App.GetStr("Alt-");
-      subItem.Click += new EventHandler(KeysClicked);
-      ctxMenu.MenuItems.Add(subItem);
-      subItem = new MenuItem();
-      subItem.Text = App.GetStr("Ctrl-Alt-");
-      subItem.Click += new EventHandler(KeysClicked);
-      ctxMenu.MenuItems.Add(subItem);
-      subItem = new MenuItem();
-      subItem.Text = App.GetStr("Ctrl-Alt-Del");
-      subItem.Click += new EventHandler(KeysClicked);
-      ctxMenu.MenuItems.Add(subItem);
-      subItem = new MenuItem();
-      subItem.Text = App.GetStr("Ctrl-Esc (Start Menu)");
-      subItem.Click += new EventHandler(KeysClicked);
-      ctxMenu.MenuItems.Add(subItem);
-      CheckRotate(ctxMenu);
+      aboutItem = new MenuItem();
+      aboutItem.Text = App.GetStr("About");
+      aboutItem.Click += new EventHandler(AboutClicked);
     }
   }
 }
