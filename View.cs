@@ -39,6 +39,8 @@ namespace Vnc.Viewer
   {
     private const byte Delta = 50; // TODO: Find an optimal value.
     private const byte BgDelta = 100;  // TODO: Find an optimal value.
+    private const byte TileWidth = 128; // TODO: Find an optimal value.
+    private const byte TileHeight = 128; // TODO: Find an optimal value.
 
     private const UInt32 CtrlKey = 0x0000FFE3;
     private const UInt32 AltKey = 0x0000FFE9;
@@ -83,6 +85,8 @@ namespace Vnc.Viewer
     private UInt16 scaledFBWidth = 0;
     private UInt16 rawFBHeight = 0;
     private UInt16 scaledFBHeight = 0;
+    private Rectangle[,] rawFBRects = null;
+    private Rectangle[,] scrnRects = null;
 
     protected int mouseX = 0;
     protected int mouseY = 0;
@@ -385,14 +389,17 @@ namespace Vnc.Viewer
         if(!hScrlBar.Visible)
           value = 0;
 
+        // The maximum that we can assign should be hScrlBar.Maximum - hScrlBar.LargeChange + 1.
+        // The maximum that we assign here is hScrlBar.Maximum - hScrlBar.LargeChange to work
+        // around a bug in Windows.
         switch(connOpts.ViewOpts.Orientation)
         {
           case Orientation.Portrait180:
           case Orientation.Landscape270:
-            hScrlBar.Value = hScrlBar.Maximum + 1 - Math.Min(value, hScrlBar.Maximum + 1 - hScrlBar.LargeChange) - hScrlBar.LargeChange;
+            hScrlBar.Value = hScrlBar.Maximum - Math.Min(value, hScrlBar.Maximum - hScrlBar.LargeChange) - hScrlBar.LargeChange;
             break;
           default:
-            hScrlBar.Value = Math.Min(value, hScrlBar.Maximum + 1 - hScrlBar.LargeChange);
+            hScrlBar.Value = Math.Min(value, hScrlBar.Maximum - hScrlBar.LargeChange);
             break;
         }
       }
@@ -419,14 +426,17 @@ namespace Vnc.Viewer
         if(!vScrlBar.Visible)
           value = 0;
 
+        // The maximum that we can assign should be vScrlBar.Maximum - vScrlBar.LargeChange + 1.
+        // The maximum that we assign here is vScrlBar.Maximum - vScrlBar.LargeChange to work
+        // around a bug in Windows.
         switch(connOpts.ViewOpts.Orientation)
         {
           case Orientation.Landscape90:
           case Orientation.Portrait180:
-            vScrlBar.Value = vScrlBar.Maximum + 1 - Math.Min(value, vScrlBar.Maximum + 1 - vScrlBar.LargeChange) - vScrlBar.LargeChange;
+            vScrlBar.Value = vScrlBar.Maximum - Math.Min(value, vScrlBar.Maximum - vScrlBar.LargeChange) - vScrlBar.LargeChange;
             break;
           default:
-            vScrlBar.Value = Math.Min(value, vScrlBar.Maximum + 1 - vScrlBar.LargeChange);
+            vScrlBar.Value = Math.Min(value, vScrlBar.Maximum - vScrlBar.LargeChange);
             break;
         }
       }
@@ -546,6 +556,47 @@ namespace Vnc.Viewer
       }
     }
 
+    private void SetupRectMappings()
+    {
+      scrnRects = null;
+      rawFBRects = null;
+
+      // When client-side scaling is not in effect, we don't need any mapping.
+      if(connOpts.ViewOpts.CliScaling == CliScaling.None)
+        return;
+
+      // We setup mappings between areas in the client area and areas in the frame buffer.
+      // When client-side scaling is active, we would like to draw the same area in the client
+      // area with the same block in the frame buffer. If we don't have mappings and perform
+      // real time calculation on OnPaint, the screen will look unstable because of rounding
+      // errors.
+      Rectangle viewable = ViewableRect;
+      int xCount = viewable.Width / TileWidth;
+      if(viewable.Width % TileWidth != 0)
+        xCount++;
+      int yCount = viewable.Height / TileHeight;
+      if(viewable.Height % TileHeight != 0)
+        yCount++;
+      scrnRects = new Rectangle[xCount, yCount];
+      rawFBRects = new Rectangle[xCount, yCount];
+      for(int y = viewable.Top; y < viewable.Bottom; y += TileHeight)
+      {
+        for(int x = viewable.Left; x < viewable.Right; x += TileWidth)
+        {
+          Rectangle scrnRect = new Rectangle(x, y, TileWidth, TileHeight);
+          if(scrnRect.Right > viewable.Right)
+            scrnRect.Width = viewable.Right - scrnRect.Left;
+          if(scrnRect.Bottom > viewable.Bottom)
+            scrnRect.Height = viewable.Bottom - scrnRect.Top;
+          int xIndex = (x - viewable.Left) / TileWidth;
+          int yIndex = (y - viewable.Top) / TileHeight;
+          scrnRects[xIndex, yIndex] = scrnRect;
+          ScrnToFrameBufRect(ref scrnRect);
+          rawFBRects[xIndex, yIndex] = scrnRect;
+        }
+      }
+    }
+
     private void ResizeCore()
     {
       if(connOpts.ViewOpts.CliScaling == CliScaling.Auto)
@@ -554,6 +605,7 @@ namespace Vnc.Viewer
         scaledFBHeight = (UInt16)ClientSize.Height;
       }
       SetupScrlBars();
+      SetupRectMappings();
       Invalidate();
 
       if(connOpts.ViewOpts.CliScaling == CliScaling.Auto)
@@ -590,6 +642,7 @@ namespace Vnc.Viewer
 
     private void Scrled(object sender, EventArgs e)
     {
+      SetupRectMappings();
       Invalidate();
     }
 
@@ -828,11 +881,29 @@ namespace Vnc.Viewer
       Rectangle destRect = Rectangle.Intersect(viewable, e.ClipRectangle);
       if(destRect != Rectangle.Empty)
       {
-        Rectangle srcRect = new Rectangle(destRect.X, destRect.Y, destRect.Width, destRect.Height);
-        ScrnToFrameBufRect(ref srcRect);
-        LockFrameBuf();
-        graphics.DrawImage(frameBuf, destRect, srcRect, GraphicsUnit.Pixel);
-        UnlockFrameBuf();
+        if(connOpts.ViewOpts.CliScaling == CliScaling.None)
+        {
+          Rectangle srcRect = new Rectangle(destRect.X, destRect.Y, destRect.Width, destRect.Height);
+          ScrnToFrameBufRect(ref srcRect);
+          LockFrameBuf();
+          graphics.DrawImage(frameBuf, destRect, srcRect, GraphicsUnit.Pixel);
+          UnlockFrameBuf();
+        }
+        else
+        {
+          // When client-side scaling is effective, the mapping ensures that we don't suffer
+          // from rounding error and always draw the same area in the client area with the same
+          // block from the frame buffer.
+          int lowerBoundY = (destRect.Top - viewable.Top) / TileHeight;
+          int upperBoundY = Math.Min((destRect.Bottom - viewable.Top) / TileHeight, scrnRects.GetUpperBound(1));
+          int lowerBoundX = (destRect.Left - viewable.Left) / TileWidth;
+          int upperBoundX = Math.Min((destRect.Right - viewable.Left) / TileWidth, scrnRects.GetUpperBound(0));
+          LockFrameBuf();
+          for(int y = lowerBoundY; y <= upperBoundY; y++)
+            for(int x = lowerBoundX; x <= upperBoundX; x++)
+              graphics.DrawImage(frameBuf, scrnRects[x, y], rawFBRects[x, y], GraphicsUnit.Pixel);
+          UnlockFrameBuf();
+        }
       }
 
       if(hScrlBar.Visible && vScrlBar.Visible)
