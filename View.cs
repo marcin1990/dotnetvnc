@@ -179,8 +179,8 @@ namespace Vnc.Viewer
     {
       if(connOpts.ViewOpts.CliScaling != CliScaling.None)
       {
-        x = (int)((float)x * (float)scaledFBWidth / (float)rawFBWidth);
-        y = (int)((float)y * (float)scaledFBHeight / (float)rawFBHeight);
+        x = x * scaledFBWidth / rawFBWidth;
+        y = y * scaledFBHeight / rawFBHeight;
       }
 
       // Scrolling
@@ -203,8 +203,8 @@ namespace Vnc.Viewer
       rect.Y = y;
       if(connOpts.ViewOpts.CliScaling != CliScaling.None)
       {
-        rect.Width = (int)((float)rect.Width * (float)scaledFBWidth / (float)rawFBWidth);
-        rect.Height = (int)((float)rect.Height * (float)scaledFBHeight / (float)rawFBHeight);
+        rect.Width = rect.Width * scaledFBWidth / rawFBWidth;
+        rect.Height = rect.Height * scaledFBHeight / rawFBHeight;
       }
     }
 
@@ -242,8 +242,8 @@ namespace Vnc.Viewer
 
       if(connOpts.ViewOpts.CliScaling != CliScaling.None)
       {
-        x = (int)((float)x * (float)rawFBWidth / (float)scaledFBWidth);
-        y = (int)((float)y * (float)rawFBHeight / (float)scaledFBHeight);
+        x = x * rawFBWidth / scaledFBWidth;
+        y = y * rawFBHeight / scaledFBHeight;
       }
 
       x = Math.Max(x, 0);
@@ -261,8 +261,8 @@ namespace Vnc.Viewer
       rect.Y = y;
       if(connOpts.ViewOpts.CliScaling != CliScaling.None)
       {
-        rect.Width = (int)((float)rect.Width * (float)rawFBWidth / (float)scaledFBWidth);
-        rect.Height = (int)((float)rect.Height * (float)rawFBHeight / (float)scaledFBHeight);
+        rect.Width = rect.Width * rawFBWidth / scaledFBWidth;
+        rect.Height = rect.Height * rawFBHeight / scaledFBHeight;
       }
     }
 
@@ -1250,8 +1250,8 @@ namespace Vnc.Viewer
 
       SetScaledDims();
       ResizeCore();
-      HScrlBarVal = (UInt16)((float)oldHScrlBarVal * (float)scaledFBWidth / (float)oldScaledFBWidth);
-      VScrlBarVal = (UInt16)((float)oldVScrlBarVal * (float)scaledFBHeight / (float)oldScaledFBHeight);
+      HScrlBarVal = (UInt16)(oldHScrlBarVal * scaledFBWidth / oldScaledFBWidth);
+      VScrlBarVal = (UInt16)(oldVScrlBarVal * scaledFBHeight / oldScaledFBHeight);
 
       CheckCliScaling();
     }
