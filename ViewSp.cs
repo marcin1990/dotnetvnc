@@ -215,6 +215,22 @@ namespace Vnc.Viewer
       }
     }
 
+    protected override void OnKeyPress(KeyPressEventArgs e)
+    {
+      if(e.Handled)
+        return;
+
+      // On a Smartphone, this means the back soft key.
+      // Let's treat it as a backspace instead.
+      if(e.KeyChar == (char)Keys.Escape)
+      {
+        e.Handled = true; // Set Handled to true will stop the Smartphone from going to another form.
+        e = new KeyPressEventArgs('\b');
+      }
+
+      base.OnKeyPress(e);
+    }
+
     private void ResetInputTimer()
     {
       // TODO: Which of the following statements are need to reset the timer?
