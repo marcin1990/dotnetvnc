@@ -31,6 +31,7 @@ namespace Vnc.Viewer
   {
     private const byte CursorDelta = 100; // TODO: Find an optimal value.
     private const UInt16 InputDelta = 5000; // TODO: Find an optimal value.
+    private const UInt16 MouseIdleDelta = 1000; // TODO: Find an optimal value.
 
     private Timer cursorTimer = new Timer();
     private int xSpeed = 0;
@@ -38,6 +39,8 @@ namespace Vnc.Viewer
 
     private Timer inputTimer = new Timer();
     private TextBox inputBox = new TextBox();
+
+    private Timer mouseIdleTimer = new Timer();
 
     private void LeftClicked(object sender, EventArgs e)
     {
@@ -70,8 +73,14 @@ namespace Vnc.Viewer
         ySpeed--;
       else if(ySpeed < 0)
         ySpeed++;
+
       if(xSpeed == 0 && ySpeed == 0)
         return;
+      else
+      {
+        if(connOpts.ViewOpts.SendMouseLocWhenIdle)
+          ResetMouseIdleTimer();
+      }
 
       Rectangle usable = UsableRect;
 
@@ -288,6 +297,37 @@ namespace Vnc.Viewer
         inputBox.Text = String.Empty;
     }
 
+    private void ResetMouseIdleTimer()
+    {
+      // TODO: Which of the following statements are need to reset the timer?
+      mouseIdleTimer.Enabled = false;
+      mouseIdleTimer.Interval = 0;
+      mouseIdleTimer.Interval = MouseIdleDelta;
+      mouseIdleTimer.Enabled = true;
+    }
+
+    private void MouseIdleTicked(object sender, EventArgs e)
+    {
+      OnMouseEvent(mouseX, mouseY, leftBtnDown, rightBtnDown);
+      mouseIdleTimer.Enabled = false; // If the cursor moves again, the timer will start again.
+    }
+
+    private void SendMouseLocWhenIdleClicked(object sender, EventArgs e)
+    {
+      connOpts.ViewOpts.SendMouseLocWhenIdle = !connOpts.ViewOpts.SendMouseLocWhenIdle;
+      for(int i = 0; i < optionsMenu.MenuItems.Count; i++)
+      {
+        MenuItem item = optionsMenu.MenuItems[i];
+        if(item.Text == App.GetStr("Send mouse location when idle"))
+          item.Checked = connOpts.ViewOpts.SendMouseLocWhenIdle;
+      }
+
+      if(connOpts.ViewOpts.SendMouseLocWhenIdle)
+        ResetMouseIdleTimer();
+      else
+        mouseIdleTimer.Enabled = false;
+    }
+
     protected override void OnPaint(PaintEventArgs e)
     {
       base.OnPaint(e);
@@ -311,6 +351,7 @@ namespace Vnc.Viewer
       base.OnClosed(e);
       cursorTimer.Enabled = false;
       inputTimer.Enabled = false;
+      mouseIdleTimer.Enabled = false;
     }
 
     internal ViewSp(Conn conn, ConnOpts connOpts, UInt16 width, UInt16 height) : base(conn, connOpts, width, height)
@@ -340,6 +381,11 @@ namespace Vnc.Viewer
       item.MenuItems.Add(keysMenu);
       item.MenuItems.Add(optionsMenu);
       subItem = new MenuItem();
+      subItem.Text = App.GetStr("Send mouse location when idle");
+      subItem.Checked = connOpts.ViewOpts.SendMouseLocWhenIdle;
+      subItem.Click += new EventHandler(SendMouseLocWhenIdleClicked);
+      optionsMenu.MenuItems.Add(subItem);
+      subItem = new MenuItem();
       subItem.Text = "-";
       item.MenuItems.Add(subItem);
       item.MenuItems.Add(aboutItem);
@@ -348,6 +394,10 @@ namespace Vnc.Viewer
       cursorTimer.Tick += new EventHandler(CursorTicked);
       cursorTimer.Interval = CursorDelta;
       cursorTimer.Enabled = true;
+
+      mouseIdleTimer.Tick += new EventHandler(MouseIdleTicked);
+      mouseIdleTimer.Interval = MouseIdleDelta;
+      mouseIdleTimer.Enabled = connOpts.ViewOpts.SendMouseLocWhenIdle;
 
       Graphics graphics = CreateGraphics();
 

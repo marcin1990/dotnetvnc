@@ -39,7 +39,8 @@ namespace Vnc.Viewer
     private string host = null;
     private int port = -1;
     private string passwd = null;
-    private ViewOpts viewOpts = null;
+
+    protected ViewOpts viewOpts = null;
 
     protected Label servLbl = new Label();
     protected TextBox remoteEndPt = new TextBox();
@@ -212,7 +213,7 @@ namespace Vnc.Viewer
       passwd = passwdBox.Text;
     }
 
-    protected void GetOptions()
+    protected virtual void GetOptions()
     {
       viewOpts.IsFullScrn = fullScrnBox.Checked;
       switch(rotateBox.SelectedIndex)
@@ -246,7 +247,7 @@ namespace Vnc.Viewer
       viewOpts.ShareServ = !shareServBox.Checked;
     }
 
-    protected void SetOptions(ViewOpts viewOpts)
+    protected virtual void SetOptions(ViewOpts viewOpts)
     {
       this.viewOpts = viewOpts;
       fullScrnBox.Checked = viewOpts.IsFullScrn;

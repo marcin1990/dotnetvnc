@@ -45,6 +45,7 @@ namespace Vnc.Viewer
     private Panel displayPanel = new Panel();
 
     private Panel othersPanel = new Panel();
+    private CheckBox sendMouseLocWhenIdleBox = new CheckBox();
 
     private MenuItem saveDefsItem = new MenuItem();
     private MenuItem restoreDefsItem = new MenuItem();
@@ -54,6 +55,18 @@ namespace Vnc.Viewer
 
     internal SessDlgSp(ViewOpts viewOpts) : base(viewOpts)
     {}
+
+    protected override void GetOptions()
+    {
+      base.GetOptions();
+      viewOpts.SendMouseLocWhenIdle = sendMouseLocWhenIdleBox.Checked;
+    }
+
+    protected override void SetOptions(ViewOpts viewOpts)
+    {
+      base.SetOptions(viewOpts);
+      sendMouseLocWhenIdleBox.Checked = viewOpts.SendMouseLocWhenIdle;
+    }
 
     protected override void AddConnHistEntry(string entry)
     {
@@ -106,6 +119,7 @@ namespace Vnc.Viewer
       othersPanel.Size = ClientRectangle.Size;
       viewOnlyBox.Width = othersPanel.ClientRectangle.Right - viewOnlyBox.Left;
       shareServBox.Width = othersPanel.ClientRectangle.Right - shareServBox.Left;
+      sendMouseLocWhenIdleBox.Width = othersPanel.ClientRectangle.Right - sendMouseLocWhenIdleBox.Left;
     }
 
     protected override void OnLoad(EventArgs e)
@@ -192,6 +206,10 @@ namespace Vnc.Viewer
       shareServBox.Location = new Point(App.DialogSpacing, viewOnlyBox.Bottom + App.DialogSpacing);
       shareServBox.Width = othersPanel.ClientRectangle.Right - shareServBox.Left;
       othersPanel.Controls.Add(shareServBox);
+      sendMouseLocWhenIdleBox.Text = App.GetStr("Send mouse location when idle");
+      sendMouseLocWhenIdleBox.Location = new Point(App.DialogSpacing, shareServBox.Bottom + App.DialogSpacing);
+      sendMouseLocWhenIdleBox.Width = othersPanel.ClientRectangle.Right - sendMouseLocWhenIdleBox.Left;
+      othersPanel.Controls.Add(sendMouseLocWhenIdleBox);
 
       graphics.Dispose();
 

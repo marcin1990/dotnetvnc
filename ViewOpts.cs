@@ -57,12 +57,14 @@ namespace Vnc.Viewer
     private const string Landscape270Name = "Screen rotated counter-clockwise";
     private const string ShareServName = "ShareServer";
     private const string ViewOnlyName = "ViewOnly";
+    private const string SendMouseLocWhenIdleName = "SendMouseLocationWhenIdle";
 
     internal PixelSize PixelSize = PixelSize.Force8Bit;
     internal bool IsFullScrn = false;
     internal Orientation Orientation = Orientation.Portrait;
     internal bool ShareServ = true;
     internal bool ViewOnly = false;
+    internal bool SendMouseLocWhenIdle = false;
 
     internal ViewOpts()
     {
@@ -134,6 +136,10 @@ namespace Vnc.Viewer
       elem = doc.CreateElement(ViewOnlyName);
       elem.InnerText = ViewOnly.ToString();
       rootElem.AppendChild(elem);
+
+      elem = doc.CreateElement(SendMouseLocWhenIdleName);
+      elem.InnerText = SendMouseLocWhenIdle.ToString();
+      rootElem.AppendChild(elem);
     }
 
     internal void Load(string fileName)
@@ -198,6 +204,16 @@ namespace Vnc.Viewer
 
       elem = FindXmlElem(doc, rootElem, ShareServName);
       ShareServ = Boolean.Parse(elem.InnerText);
+
+      try
+      {
+        elem = FindXmlElem(doc, rootElem, SendMouseLocWhenIdleName);
+        SendMouseLocWhenIdle = Boolean.Parse(elem.InnerText);
+      }
+      catch(FormatException)
+      {
+        // Do nothing. Use default.
+      }
     }
   }
 }
