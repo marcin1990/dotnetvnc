@@ -41,6 +41,8 @@ namespace Vnc.Viewer
 
     protected TabPage displayPage = new TabPage();
 
+    protected TabPage scalingPage = new TabPage();
+
     protected TabPage othersPage = new TabPage();
 
     protected TabPage saveLoadPage = new TabPage();
@@ -72,6 +74,8 @@ namespace Vnc.Viewer
 
     private void SaveConnOpts(bool savePwd)
     {
+      if(!ValidateCliScaling())
+        return;
       if(!ValidateHostPort())
         return;
       GetPasswd();
@@ -183,6 +187,9 @@ namespace Vnc.Viewer
       recentBox.Height = generalPage.ClientRectangle.Bottom - App.DialogSpacing - recentBox.Top;
       rotateBox.Width = displayPage.ClientRectangle.Right - App.DialogSpacing - rotateBox.Left;
       pixelSizeBox.Width = displayPage.ClientRectangle.Right - App.DialogSpacing - pixelSizeBox.Left;
+      cliScalingBox.Width = scalingPage.ClientRectangle.Right - App.DialogSpacing - cliScalingBox.Left;
+      cliScalingWidthBox.Width = scalingPage.ClientRectangle.Right - App.DialogSpacing - cliScalingWidthBox.Left;
+      cliScalingHeightBox.Width = scalingPage.ClientRectangle.Right - App.DialogSpacing - cliScalingHeightBox.Left;
       viewOnlyBox.Width = othersPage.ClientRectangle.Right - viewOnlyBox.Left;
       shareServBox.Width = othersPage.ClientRectangle.Right - shareServBox.Left;
       saveConnOptsBtn.Width = saveLoadPage.ClientRectangle.Right - App.DialogSpacing - saveConnOptsBtn.Left;
@@ -273,6 +280,33 @@ namespace Vnc.Viewer
       pixelSizeBox.Width = displayPage.ClientRectangle.Right - App.DialogSpacing - pixelSizeBox.Left;
       pixelSizeBox.KeyPress += keyPressHdr;
       displayPage.Controls.Add(pixelSizeBox);
+
+      tabCtrl.TabPages.Add(scalingPage);
+      scalingPage.Text = App.GetStr("Scaling");
+      cliScalingLbl.Size = graphics.MeasureString(cliScalingLbl.Text, Font).ToSize();
+      cliScalingWidthLbl.Size = graphics.MeasureString(cliScalingWidthLbl.Text, Font).ToSize();
+      cliScalingHeightLbl.Size = graphics.MeasureString(cliScalingHeightLbl.Text, Font).ToSize();
+      cliScalingLbl.Width = Math.Max(cliScalingLbl.Width, Math.Max(cliScalingHeightLbl.Width, cliScalingWidthLbl.Width));
+      cliScalingWidthLbl.Width = cliScalingLbl.Width;
+      cliScalingHeightLbl.Width = cliScalingLbl.Width;
+      cliScalingLbl.Location = new Point(App.DialogSpacing, App.DialogSpacing);
+      scalingPage.Controls.Add(cliScalingLbl);
+      cliScalingBox.Location = new Point(cliScalingLbl.Right + App.DialogSpacing, cliScalingLbl.Top);
+      cliScalingBox.Width = scalingPage.ClientRectangle.Right - App.DialogSpacing - cliScalingBox.Left;
+      cliScalingBox.KeyPress += keyPressHdr;
+      scalingPage.Controls.Add(cliScalingBox);
+      cliScalingWidthLbl.Location = new Point(cliScalingLbl.Left, cliScalingBox.Bottom + App.DialogSpacing);
+      scalingPage.Controls.Add(cliScalingWidthLbl);
+      cliScalingWidthBox.Location = new Point(cliScalingWidthLbl.Right + App.DialogSpacing, cliScalingWidthLbl.Top);
+      cliScalingWidthBox.Width = scalingPage.ClientRectangle.Right - App.DialogSpacing - cliScalingWidthBox.Left;
+      cliScalingWidthBox.KeyPress += keyPressHdr;
+      scalingPage.Controls.Add(cliScalingWidthBox);
+      cliScalingHeightLbl.Location = new Point(cliScalingWidthLbl.Left, cliScalingWidthBox.Bottom + App.DialogSpacing);
+      scalingPage.Controls.Add(cliScalingHeightLbl);
+      cliScalingHeightBox.Location = new Point(cliScalingHeightLbl.Right + App.DialogSpacing, cliScalingHeightLbl.Top);
+      cliScalingHeightBox.Width = scalingPage.ClientRectangle.Right - App.DialogSpacing - cliScalingHeightBox.Left;
+      cliScalingHeightBox.KeyPress += keyPressHdr;
+      scalingPage.Controls.Add(cliScalingHeightBox);
 
       tabCtrl.TabPages.Add(othersPage);
       othersPage.Text = App.GetStr("Others");

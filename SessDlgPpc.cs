@@ -43,6 +43,8 @@ namespace Vnc.Viewer
       remoteEndPt.Height *= 2;
       passwdBox.Height *= 2;
       fullScrnBox.Height *= 2;
+      cliScalingWidthBox.Height *= 2;
+      cliScalingHeightBox.Height *= 2;
       viewOnlyBox.Height *= 2;
       shareServBox.Height *= 2;
       okBtn.Height *= 2;

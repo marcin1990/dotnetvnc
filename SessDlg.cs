@@ -55,6 +55,13 @@ namespace Vnc.Viewer
     protected Label pixelSizeLbl = new Label();
     protected ComboBox pixelSizeBox = new ComboBox();
 
+    protected Label cliScalingLbl = new Label();
+    protected ComboBox cliScalingBox = new ComboBox();
+    protected Label cliScalingWidthLbl = new Label();
+    protected TextBox cliScalingWidthBox = new TextBox();
+    protected Label cliScalingHeightLbl = new Label();
+    protected TextBox cliScalingHeightBox = new TextBox();
+
     protected CheckBox viewOnlyBox = new CheckBox();
     protected CheckBox shareServBox = new CheckBox();
 
@@ -100,6 +107,8 @@ namespace Vnc.Viewer
 
     protected void Ok()
     {
+      if(!ValidateCliScaling())
+        return;
       if(!ValidateHostPort())
         return;
       GetPasswd();
@@ -121,6 +130,39 @@ namespace Vnc.Viewer
     private void CancelClicked(object sender, EventArgs e)
     {
       Cancel();
+    }
+
+    protected bool ValidateCliScaling()
+    {
+      if(cliScalingBox.Text != App.GetStr("Custom"))
+        return true;
+
+      try
+      {
+        if(UInt16.Parse(cliScalingWidthBox.Text) > 0 && UInt16.Parse(cliScalingHeightBox.Text) > 0)
+          return true;
+        else
+          return false;
+      }
+      catch(FormatException)
+      {
+        MessageBox.Show(App.GetStr("Customized client-side scaling width or height is invalid!"),
+                        Text,
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Exclamation,
+                        MessageBoxDefaultButton.Button1);
+        return false;
+      }
+      catch(OverflowException)
+      {
+        // TODO: Something more descriptive.
+        MessageBox.Show(App.GetStr("Customized client-side scaling width or height is invalid!"),
+                        Text,
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Exclamation,
+                        MessageBoxDefaultButton.Button1);
+        return false;
+      }
     }
 
     protected bool ValidateHostPort()
@@ -243,6 +285,38 @@ namespace Vnc.Viewer
           viewOpts.PixelSize = PixelSize.Force16Bit;
           break;
       }
+      viewOpts.CliScalingWidth = 0;
+      viewOpts.CliScalingHeight = 0;
+      switch(cliScalingBox.SelectedIndex)
+      {
+        case 0:
+          viewOpts.CliScaling = CliScaling.None;
+          break;
+        case 1:
+          viewOpts.CliScaling = CliScaling.Auto;
+          break;
+        case 2:
+          viewOpts.CliScaling = CliScaling.OneHalf;
+          break;
+        case 3:
+          viewOpts.CliScaling = CliScaling.OneThird;
+          break;
+        case 4:
+          viewOpts.CliScaling = CliScaling.OneFourth;
+          break;
+        case 5:
+          viewOpts.CliScaling = CliScaling.OneFifth;
+          break;
+        case 6:
+          viewOpts.CliScaling = CliScaling.Double;
+          break;
+        case 7:
+          viewOpts.CliScaling = CliScaling.Custom;
+          // Assuming we have validated the input.
+          viewOpts.CliScalingWidth = UInt16.Parse(cliScalingWidthBox.Text);
+          viewOpts.CliScalingHeight = UInt16.Parse(cliScalingHeightBox.Text);
+          break;
+      }
       viewOpts.ViewOnly = viewOnlyBox.Checked;
       viewOpts.ShareServ = !shareServBox.Checked;
     }
@@ -276,6 +350,37 @@ namespace Vnc.Viewer
           break;
         case PixelSize.Force16Bit:
           pixelSizeBox.SelectedIndex = 2;
+          break;
+      }
+      cliScalingWidthBox.Text = String.Empty;
+      cliScalingHeightBox.Text = String.Empty;
+      switch(viewOpts.CliScaling)
+      {
+        case CliScaling.None:
+          cliScalingBox.SelectedIndex = 0;
+          break;
+        case CliScaling.Auto:
+          cliScalingBox.SelectedIndex = 1;
+          break;
+        case CliScaling.OneHalf:
+          cliScalingBox.SelectedIndex = 2;
+          break;
+        case CliScaling.OneThird:
+          cliScalingBox.SelectedIndex = 3;
+          break;
+        case CliScaling.OneFourth:
+          cliScalingBox.SelectedIndex = 4;
+          break;
+        case CliScaling.OneFifth:
+          cliScalingBox.SelectedIndex = 5;
+          break;
+        case CliScaling.Double:
+          cliScalingBox.SelectedIndex = 6;
+          break;
+        case CliScaling.Custom:
+          cliScalingBox.SelectedIndex = 7;
+          cliScalingWidthBox.Text = viewOpts.CliScalingWidth.ToString();
+          cliScalingHeightBox.Text = viewOpts.CliScalingHeight.ToString();
           break;
       }
       viewOnlyBox.Checked = viewOpts.ViewOnly;
@@ -330,6 +435,8 @@ namespace Vnc.Viewer
 
     private void SaveDefsClicked(object sender, EventArgs e)
     {
+      if(!ValidateCliScaling())
+        return;
       GetOptions();
       try
       {
@@ -385,6 +492,12 @@ namespace Vnc.Viewer
       SetOptions(viewOpts);
     }
 
+    private void CliScalingBoxChanged(object sender, EventArgs e)
+    {
+      cliScalingWidthBox.Enabled = cliScalingBox.Text == App.GetStr("Custom");
+      cliScalingHeightBox.Enabled = cliScalingBox.Text == App.GetStr("Custom");
+    }
+
     protected override void OnLoad(EventArgs e)
     {
       base.OnLoad(e);
@@ -413,6 +526,20 @@ namespace Vnc.Viewer
       pixelSizeBox.Items.Add(App.GetStr("Server decides"));
       pixelSizeBox.Items.Add(App.GetStr("Force 8-bit"));
       pixelSizeBox.Items.Add(App.GetStr("Force 16-bit"));
+
+      cliScalingLbl.Text = App.GetStr("Client-side scaling:");
+      cliScalingBox.DropDownStyle = ComboBoxStyle.DropDownList;
+      cliScalingBox.Items.Add(App.GetStr("None"));
+      cliScalingBox.Items.Add(App.GetStr("Auto"));
+      cliScalingBox.Items.Add(App.GetStr("1/2 of server"));
+      cliScalingBox.Items.Add(App.GetStr("1/3 of server"));
+      cliScalingBox.Items.Add(App.GetStr("1/4 of server"));
+      cliScalingBox.Items.Add(App.GetStr("1/5 of server"));
+      cliScalingBox.Items.Add(App.GetStr("2 of server"));
+      cliScalingBox.Items.Add(App.GetStr("Custom"));
+      cliScalingBox.SelectedIndexChanged += new EventHandler(CliScalingBoxChanged);
+      cliScalingWidthLbl.Text = App.GetStr("Width (pixel):");
+      cliScalingHeightLbl.Text = App.GetStr("Height (pixel):");
 
       viewOnlyBox.Text = App.GetStr("View only (ignore input)");
       shareServBox.Text = App.GetStr("Disconnect other viewers upon connect");

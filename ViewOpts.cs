@@ -41,6 +41,18 @@ namespace Vnc.Viewer
     Landscape270
   }
 
+  internal enum CliScaling
+  {
+    None,
+    OneHalf,
+    OneThird,
+    OneFourth,
+    OneFifth,
+    Double,
+    Auto,
+    Custom
+  }
+
   /// <remarks>This class is responsible for loading and saving view options.</remarks>
   internal class ViewOpts
   {
@@ -55,6 +67,17 @@ namespace Vnc.Viewer
     private const string Landscape90Name = "Screen rotated clockwise";
     private const string Portrait180Name = "Upside down";
     private const string Landscape270Name = "Screen rotated counter-clockwise";
+    private const string CliScalingName = "ClientScaling";
+    private const string NoneName = "None";
+    private const string OneHalfName = "OneHalf";
+    private const string OneThirdName = "OneThird";
+    private const string OneFourthName = "OneFourth";
+    private const string OneFifthName = "OneFifth";
+    private const string DoubleName = "Double";
+    private const string AutoName = "Auto";
+    private const string CustomName = "Custom";
+    private const string WidthName = "Width";
+    private const string HeightName = "Height";
     private const string ShareServName = "ShareServer";
     private const string ViewOnlyName = "ViewOnly";
     private const string SendMouseLocWhenIdleName = "SendMouseLocationWhenIdle";
@@ -62,6 +85,9 @@ namespace Vnc.Viewer
     internal PixelSize PixelSize = PixelSize.Force8Bit;
     internal bool IsFullScrn = false;
     internal Orientation Orientation = Orientation.Portrait;
+    internal CliScaling CliScaling = CliScaling.None;
+    internal UInt16 CliScalingWidth = 0;
+    internal UInt16 CliScalingHeight = 0;
     internal bool ShareServ = true;
     internal bool ViewOnly = false;
     internal bool SendMouseLocWhenIdle = false;
@@ -129,6 +155,38 @@ namespace Vnc.Viewer
       }
       rootElem.AppendChild(elem);
 
+      elem = doc.CreateElement(CliScalingName);
+      switch(CliScaling)
+      {
+        case CliScaling.OneHalf:
+          elem.InnerText = OneHalfName;
+          break;
+        case CliScaling.OneThird:
+          elem.InnerText = OneThirdName;
+          break;
+        case CliScaling.OneFourth:
+          elem.InnerText = OneFourthName;
+          break;
+        case CliScaling.OneFifth:
+          elem.InnerText = OneFifthName;
+          break;
+        case CliScaling.Double:
+          elem.InnerText = DoubleName;
+          break;
+        case CliScaling.Auto:
+          elem.InnerText = AutoName;
+          break;
+        case CliScaling.Custom:
+          elem.InnerText = CustomName;
+          break;
+        default:
+          elem.InnerText = NoneName;
+          break;
+      }
+      elem.SetAttribute(WidthName, CliScalingWidth.ToString());
+      elem.SetAttribute(HeightName, CliScalingHeight.ToString());
+      rootElem.AppendChild(elem);
+
       elem = doc.CreateElement(ShareServName);
       elem.InnerText = ShareServ.ToString();
       rootElem.AppendChild(elem);
@@ -161,6 +219,8 @@ namespace Vnc.Viewer
 
     internal void ReadFromXml(XmlDocument doc, XmlElement rootElem)
     {
+      bool elemExists = false;
+
       XmlElement elem = FindXmlElem(doc, rootElem, PixelSizeName);
       switch(elem.InnerText)
       {
@@ -199,6 +259,71 @@ namespace Vnc.Viewer
           throw new FormatException("Orientation is unknown.");
       }
 
+      try
+      {
+        elem = FindXmlElem(doc, rootElem, CliScalingName);
+        elemExists = true;
+      }
+      catch(FormatException)
+      {
+        elemExists = false;
+      }
+      if(elemExists)
+      {
+        switch(elem.InnerText)
+        {
+          case NoneName:
+            CliScaling = CliScaling.None;
+            break;
+          case OneHalfName:
+            CliScaling = CliScaling.OneHalf;
+            break;
+          case OneThirdName:
+            CliScaling = CliScaling.OneThird;
+            break;
+          case OneFourthName:
+            CliScaling = CliScaling.OneFourth;
+            break;
+          case OneFifthName:
+            CliScaling = CliScaling.OneFifth;
+            break;
+          case DoubleName:
+            CliScaling = CliScaling.Double;
+            break;
+          case AutoName:
+            CliScaling = CliScaling.Auto;
+            break;
+          case CustomName:
+            CliScaling = CliScaling.Custom;
+            break;
+          default:
+            throw new FormatException("Client-side scaling setting is unknown.");
+        }
+        try
+        {
+          CliScalingWidth = UInt16.Parse(elem.GetAttribute(WidthName));
+          CliScalingHeight = UInt16.Parse(elem.GetAttribute(HeightName));
+        }
+        catch(ArgumentNullException)
+        {
+          throw new FormatException("Client-side scaling setting is invalid.");
+        }
+        catch(OverflowException)
+        {
+          throw new FormatException("Client-side scaling setting is invalid.");
+        }
+        catch(FormatException)
+        {
+          throw new FormatException("Client-side scaling setting is invalid.");
+        }
+      }
+      else
+      {
+        CliScaling = CliScaling.None;
+        CliScalingWidth = 0;
+        CliScalingHeight = 0;
+      }
+
       elem = FindXmlElem(doc, rootElem, ViewOnlyName);
       ViewOnly = Boolean.Parse(elem.InnerText);
 
@@ -212,7 +337,7 @@ namespace Vnc.Viewer
       }
       catch(FormatException)
       {
-        // Do nothing. Use default.
+        SendMouseLocWhenIdle = false;
       }
     }
   }

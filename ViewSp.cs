@@ -44,14 +44,14 @@ namespace Vnc.Viewer
 
     private void LeftClicked(object sender, EventArgs e)
     {
-      OnMouseEvent(mouseX, mouseY, true, false);
-      OnMouseEvent(mouseX, mouseY, false, false);
+      OnMouseEvent(mouseX, mouseY, true, rightBtnDown);
+      OnMouseEvent(mouseX, mouseY, false, rightBtnDown);
     }
 
     private void RightClicked(object sender, EventArgs e)
     {
-      OnMouseEvent(mouseX, mouseY, false, true);
-      OnMouseEvent(mouseX, mouseY, false, false);
+      OnMouseEvent(mouseX, mouseY, leftBtnDown, true);
+      OnMouseEvent(mouseX, mouseY, leftBtnDown, false);
     }
 
     private void CancelExitFullScrn()
@@ -137,6 +137,9 @@ namespace Vnc.Viewer
 
       if(tapHoldCnt > NumTapHoldCircles)
       {
+        // We won't get a KeyUp after going back to window mode. Set the flag here.
+        rightBtnDown = false;
+
         timer.Enabled = false;
         ToggleFullScrn();
       }
