@@ -67,6 +67,9 @@ namespace Vnc.Viewer
     protected MenuItem refreshItem = new MenuItem();
     protected MenuItem closeConnItem = new MenuItem();
     protected MenuItem viewMenu = new MenuItem();
+    private MenuItem rotateMenu = new MenuItem();
+    private MenuItem cliScalingMenu = new MenuItem();
+    private MenuItem pixelSizeMenu = new MenuItem();
     protected MenuItem keysMenu = new MenuItem();
     protected MenuItem optionsMenu = new MenuItem();
     protected MenuItem aboutItem = new MenuItem();
@@ -88,8 +91,10 @@ namespace Vnc.Viewer
     private bool toKeyUpCtrl = false;
     private bool toKeyUpAlt = false;
 
-    protected EventHandler rotateHdr = null;
     protected EventHandler fullScrnHdr = null;
+    protected EventHandler rotateHdr = null;
+    protected EventHandler cliScalingHdr = null;
+    protected EventHandler pixelSizeHdr = null;
     protected EventHandler keysHdr = null;
 
     private System.Windows.Forms.Timer bgTimer = new System.Windows.Forms.Timer();
@@ -519,14 +524,11 @@ namespace Vnc.Viewer
       }
       else
       {
-        int usefulWidth = ClientSize.Width;
-        int usefulHeight = ClientSize.Height;
-        usefulWidth -= vScrlBar.Visible? vScrlBar.Width : 0;
-        usefulHeight -= hScrlBar.Visible? hScrlBar.Height : 0;
-        if(usefulWidth > frameBufWidth || usefulHeight > frameBufHeight)
+        Rectangle usableRect = UsableRect;
+        if(usableRect.Width > frameBufWidth || usableRect.Height > frameBufHeight)
         {
-          int width = Math.Min(usefulWidth, frameBufWidth);
-          int height = Math.Min(usefulHeight, frameBufHeight);
+          int width = Math.Min(usableRect.Width, frameBufWidth);
+          int height = Math.Min(usableRect.Height, frameBufHeight);
           width += vScrlBar.Visible? vScrlBar.Width : 0;
           height += hScrlBar.Visible? hScrlBar.Height : 0;
           ClientSize = new Size(width, height);
@@ -1075,7 +1077,7 @@ namespace Vnc.Viewer
 
     protected virtual void CheckRotate()
     {
-      CheckRotate(viewMenu);
+      CheckRotate(rotateMenu);
     }
 
     protected void CheckRotate(Menu menu)
@@ -1114,6 +1116,105 @@ namespace Vnc.Viewer
           break;
         default:
           normal.Checked = true;
+          break;
+      }
+    }
+
+    private void CliScalingClicked(object sender, EventArgs e)
+    {
+      MenuItem item = (MenuItem)sender;
+      if(item.Text == App.GetStr("None"))
+        connOpts.ViewOpts.CliScaling = CliScaling.None;
+      else if(item.Text == App.GetStr("Auto"))
+        connOpts.ViewOpts.CliScaling = CliScaling.Auto;
+      else if(item.Text == App.GetStr("1/2 of server"))
+        connOpts.ViewOpts.CliScaling = CliScaling.OneHalf;
+      else if(item.Text == App.GetStr("1/3 of server"))
+        connOpts.ViewOpts.CliScaling = CliScaling.OneThird;
+      else if(item.Text == App.GetStr("1/4 of server"))
+        connOpts.ViewOpts.CliScaling = CliScaling.OneFourth;
+      else if(item.Text == App.GetStr("1/5 of server"))
+        connOpts.ViewOpts.CliScaling = CliScaling.OneFifth;
+      else if(item.Text == App.GetStr("2 of server"))
+        connOpts.ViewOpts.CliScaling = CliScaling.Double;
+      else if(item.Text == App.GetStr("Custom..."))
+      {
+        CliScalingDlg dlg = new CliScalingDlg(connOpts.ViewOpts);
+        dlg.ShowDialog();
+      }
+
+      CheckCliScaling();
+    }
+
+    protected virtual void CheckCliScaling()
+    {
+      CheckCliScaling(cliScalingMenu);
+    }
+
+    protected void CheckCliScaling(Menu menu)
+    {
+      MenuItem noneItem = null;
+      MenuItem autoItem = null;
+      MenuItem oneHalfItem = null;
+      MenuItem oneThirdItem = null;
+      MenuItem oneFourthItem = null;
+      MenuItem oneFifthItem = null;
+      MenuItem doubleItem = null;
+      MenuItem customItem = null;
+      for(int i = 0; i < menu.MenuItems.Count; i++)
+      {
+        MenuItem item = menu.MenuItems[i];
+        if(item.Text == App.GetStr("None"))
+          noneItem = item;
+        else if(item.Text == App.GetStr("Auto"))
+          autoItem = item;
+        else if(item.Text == App.GetStr("1/2 of server"))
+          oneHalfItem = item;
+        else if(item.Text == App.GetStr("1/3 of server"))
+          oneThirdItem = item;
+        else if(item.Text == App.GetStr("1/4 of server"))
+          oneFourthItem = item;
+        else if(item.Text == App.GetStr("1/5 of server"))
+          oneFifthItem = item;
+        else if(item.Text == App.GetStr("2 of server"))
+          doubleItem = item;
+        else if(item.Text == App.GetStr("Custom..."))
+          customItem = item;
+      }
+      noneItem.Checked = false;
+      autoItem.Checked = false;
+      oneHalfItem.Checked = false;
+      oneThirdItem.Checked = false;
+      oneFourthItem.Checked = false;
+      oneFifthItem.Checked = false;
+      doubleItem.Checked = false;
+      customItem.Checked = false;
+
+      switch(connOpts.ViewOpts.CliScaling)
+      {
+        case CliScaling.Auto:
+          autoItem.Checked = true;
+          break;
+        case CliScaling.OneHalf:
+          oneHalfItem.Checked = true;
+          break;
+        case CliScaling.OneThird:
+          oneThirdItem.Checked = true;
+          break;
+        case CliScaling.OneFourth:
+          oneFourthItem.Checked = true;
+          break;
+        case CliScaling.OneFifth:
+          oneFifthItem.Checked = true;
+          break;
+        case CliScaling.Double:
+          doubleItem.Checked = true;
+          break;
+        case CliScaling.Custom:
+          customItem.Checked = true;
+          break;
+        default:
+          noneItem.Checked = true;
           break;
       }
     }
@@ -1167,26 +1268,25 @@ namespace Vnc.Viewer
       CheckPixelSize();
     }
 
-    private void CheckPixelSize()
+    protected virtual void CheckPixelSize()
+    {
+      CheckPixelSize(pixelSizeMenu);
+    }
+
+    protected void CheckPixelSize(Menu menu)
     {
       MenuItem serverDecides = null;
       MenuItem force8Bit = null;
       MenuItem force16Bit = null;
-      for(int i = 0; i < optionsMenu.MenuItems.Count; i++)
+      for(int i = 0; i < menu.MenuItems.Count; i++)
       {
-        MenuItem item = optionsMenu.MenuItems[i];
-        if(item.Text != App.GetStr("Pixel size"))
-          continue;
-        for(int j = 0; j < item.MenuItems.Count; j++)
-        {
-          MenuItem subItem = item.MenuItems[j];
-          if(subItem.Text == App.GetStr("Server decides"))
-            serverDecides = subItem;
-          else if(subItem.Text == App.GetStr("Force 8-bit"))
-            force8Bit = subItem;
-          else if(subItem.Text == App.GetStr("Force 16-bit"))
-            force16Bit = subItem;
-        }
+        MenuItem item = menu.MenuItems[i];
+        if(item.Text == App.GetStr("Server decides"))
+          serverDecides = item;
+        else if(item.Text == App.GetStr("Force 8-bit"))
+          force8Bit = item;
+        else if(item.Text == App.GetStr("Force 16-bit"))
+          force16Bit = item;
       }
       serverDecides.Checked = false;
       force8Bit.Checked = false;
@@ -1309,11 +1409,11 @@ namespace Vnc.Viewer
       vScrlBar.ValueChanged += scrlHdr;
 
       MenuItem item;
-      MenuItem subItem;
-      rotateHdr = new EventHandler(RotateClicked);
       fullScrnHdr = new EventHandler(FullScrnClicked);
+      rotateHdr = new EventHandler(RotateClicked);
+      cliScalingHdr = new EventHandler(CliScalingClicked);
+      pixelSizeHdr = new EventHandler(PixelSizeClicked);
       keysHdr = new EventHandler(KeysClicked);
-      EventHandler pixelSizeHdr = new EventHandler(PixelSizeClicked);
 
       connMenu.Text = App.GetStr("Connection");
       newConnItem.Text = App.GetStr("New...");
@@ -1325,30 +1425,79 @@ namespace Vnc.Viewer
 
       viewMenu.Text = App.GetStr("View");
       item = new MenuItem();
-      item.Text = App.GetStr("Full Screen");
+      item.Text = App.GetStr("Full screen");
       item.Checked = false; // If we see this we are not using full screen.
       item.Click += fullScrnHdr;
       viewMenu.MenuItems.Add(item);
-      item = new MenuItem();
-      item.Text = "-";
-      viewMenu.MenuItems.Add(item);
+      rotateMenu.Text = App.GetStr("Rotate");
+      viewMenu.MenuItems.Add(rotateMenu);
       item = new MenuItem();
       item.Text = App.GetStr("Portrait");
       item.Click += rotateHdr;
-      viewMenu.MenuItems.Add(item);
+      rotateMenu.MenuItems.Add(item);
       item = new MenuItem();
       item.Text = App.GetStr("Screen rotated clockwise");
       item.Click += rotateHdr;
-      viewMenu.MenuItems.Add(item);
+      rotateMenu.MenuItems.Add(item);
       item = new MenuItem();
       item.Text = App.GetStr("Screen rotated counter-clockwise");
       item.Click += rotateHdr;
-      viewMenu.MenuItems.Add(item);
+      rotateMenu.MenuItems.Add(item);
       item = new MenuItem();
       item.Text = App.GetStr("Upside down");
       item.Click += rotateHdr;
-      viewMenu.MenuItems.Add(item);
-      CheckRotate(viewMenu);
+      rotateMenu.MenuItems.Add(item);
+      CheckRotate(rotateMenu);
+      cliScalingMenu.Text = App.GetStr("Client-side scaling");
+      viewMenu.MenuItems.Add(cliScalingMenu);
+      item = new MenuItem();
+      item.Text = App.GetStr("None");
+      item.Click += cliScalingHdr;
+      cliScalingMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("Auto");
+      item.Click += cliScalingHdr;
+      cliScalingMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("1/2 of server");
+      item.Click += cliScalingHdr;
+      cliScalingMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("1/3 of server");
+      item.Click += cliScalingHdr;
+      cliScalingMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("1/4 of server");
+      item.Click += cliScalingHdr;
+      cliScalingMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("1/5 of server");
+      item.Click += cliScalingHdr;
+      cliScalingMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("2 of server");
+      item.Click += cliScalingHdr;
+      cliScalingMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("Custom...");
+      item.Click += cliScalingHdr;
+      cliScalingMenu.MenuItems.Add(item);
+      CheckCliScaling(cliScalingMenu);
+      pixelSizeMenu.Text = App.GetStr("Pixel size");
+      viewMenu.MenuItems.Add(pixelSizeMenu);
+      item = new MenuItem();
+      item.Text = App.GetStr("Server decides");
+      item.Click += pixelSizeHdr;
+      pixelSizeMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("Force 8-bit");
+      item.Click += pixelSizeHdr;
+      pixelSizeMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("Force 16-bit");
+      item.Click += pixelSizeHdr;
+      pixelSizeMenu.MenuItems.Add(item);
+      CheckPixelSize();
 
       keysMenu.Text = App.GetStr("Keys");
       item = new MenuItem();
@@ -1381,22 +1530,6 @@ namespace Vnc.Viewer
       keysMenu.MenuItems.Add(item);
 
       optionsMenu.Text = App.GetStr("Options");
-      item = new MenuItem();
-      item.Text = App.GetStr("Pixel size");
-      optionsMenu.MenuItems.Add(item);
-      subItem = new MenuItem();
-      subItem.Text = App.GetStr("Server decides");
-      subItem.Click += pixelSizeHdr;
-      item.MenuItems.Add(subItem);
-      subItem = new MenuItem();
-      subItem.Text = App.GetStr("Force 8-bit");
-      subItem.Click += pixelSizeHdr;
-      item.MenuItems.Add(subItem);
-      subItem = new MenuItem();
-      subItem.Text = App.GetStr("Force 16-bit");
-      subItem.Click += pixelSizeHdr;
-      item.MenuItems.Add(subItem);
-      CheckPixelSize();
       item = new MenuItem();
       item.Text = App.GetStr("View only");
       item.Checked = connOpts.ViewOpts.ViewOnly;

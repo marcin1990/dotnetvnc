@@ -30,6 +30,9 @@ namespace Vnc.Viewer
   internal abstract class ViewFullCf : View
   {
     protected ContextMenu ctxMenu = new ContextMenu();
+    private MenuItem ctxRotateMenu = new MenuItem();
+    private MenuItem ctxCliScalingMenu = new MenuItem();
+    private MenuItem ctxKeysMenu = new MenuItem();
 
     protected override void OnKeyUp(KeyEventArgs e)
     {
@@ -93,7 +96,13 @@ namespace Vnc.Viewer
     protected override void CheckRotate()
     {
       base.CheckRotate();
-      CheckRotate(ctxMenu);
+      CheckRotate(ctxRotateMenu);
+    }
+
+    protected override void CheckCliScaling()
+    {
+      base.CheckCliScaling();
+      CheckCliScaling(ctxCliScalingMenu);
     }
 
     internal ViewFullCf(Conn conn, ConnOpts connOpts, UInt16 width, UInt16 height) : base(conn, connOpts, width, height)
@@ -132,61 +141,94 @@ namespace Vnc.Viewer
       item.MenuItems.Add(aboutItem);
 
       item = new MenuItem();
-      item.Text = App.GetStr("Full Screen");
+      item.Text = App.GetStr("Full screen");
       item.Checked = true; // If we see this we are using full screen.
       item.Click += fullScrnHdr;
       ctxMenu.MenuItems.Add(item);
-      item = new MenuItem();
-      item.Text = "-";
-      ctxMenu.MenuItems.Add(item);
+      ctxRotateMenu.Text = App.GetStr("Rotate");
+      ctxMenu.MenuItems.Add(ctxRotateMenu);
       item = new MenuItem();
       item.Text = App.GetStr("Portrait");
       item.Click += rotateHdr;
-      ctxMenu.MenuItems.Add(item);
+      ctxRotateMenu.MenuItems.Add(item);
       item = new MenuItem();
       item.Text = App.GetStr("Screen rotated clockwise");
       item.Click += rotateHdr;
-      ctxMenu.MenuItems.Add(item);
+      ctxRotateMenu.MenuItems.Add(item);
       item = new MenuItem();
       item.Text = App.GetStr("Screen rotated counter-clockwise");
       item.Click += rotateHdr;
-      ctxMenu.MenuItems.Add(item);
+      ctxRotateMenu.MenuItems.Add(item);
       item = new MenuItem();
       item.Text = App.GetStr("Upside down");
       item.Click += rotateHdr;
-      ctxMenu.MenuItems.Add(item);
+      ctxRotateMenu.MenuItems.Add(item);
+      CheckRotate(ctxRotateMenu);
+      ctxCliScalingMenu.Text = App.GetStr("Client-side scaling");
+      ctxMenu.MenuItems.Add(ctxCliScalingMenu);
       item = new MenuItem();
-      item.Text = "-";
-      ctxMenu.MenuItems.Add(item);
+      item.Text = App.GetStr("None");
+      item.Click += cliScalingHdr;
+      ctxCliScalingMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("Auto");
+      item.Click += cliScalingHdr;
+      ctxCliScalingMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("1/2 of server");
+      item.Click += cliScalingHdr;
+      ctxCliScalingMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("1/3 of server");
+      item.Click += cliScalingHdr;
+      ctxCliScalingMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("1/4 of server");
+      item.Click += cliScalingHdr;
+      ctxCliScalingMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("1/5 of server");
+      item.Click += cliScalingHdr;
+      ctxCliScalingMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("2 of server");
+      item.Click += cliScalingHdr;
+      ctxCliScalingMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("Custom...");
+      item.Click += cliScalingHdr;
+      ctxCliScalingMenu.MenuItems.Add(item);
+      CheckCliScaling(ctxCliScalingMenu);
+      ctxKeysMenu.Text = App.GetStr("Keys");
+      ctxMenu.MenuItems.Add(ctxKeysMenu);
       item = new MenuItem();
       item.Text = App.GetStr("Shift down");
       item.Click += keysHdr;
-      ctxMenu.MenuItems.Add(item);
+      ctxKeysMenu.MenuItems.Add(item);
       item = new MenuItem();
       item.Text = App.GetStr("Shift up");
       item.Click += keysHdr;
-      ctxMenu.MenuItems.Add(item);
+      ctxKeysMenu.MenuItems.Add(item);
       item = new MenuItem();
       item.Text = App.GetStr("Ctrl-");
       item.Click += keysHdr;
-      ctxMenu.MenuItems.Add(item);
+      ctxKeysMenu.MenuItems.Add(item);
       item = new MenuItem();
       item.Text = App.GetStr("Alt-");
       item.Click += keysHdr;
-      ctxMenu.MenuItems.Add(item);
+      ctxKeysMenu.MenuItems.Add(item);
       item = new MenuItem();
       item.Text = App.GetStr("Ctrl-Alt-");
       item.Click += keysHdr;
-      ctxMenu.MenuItems.Add(item);
+      ctxKeysMenu.MenuItems.Add(item);
       item = new MenuItem();
       item.Text = App.GetStr("Ctrl-Alt-Del");
       item.Click += keysHdr;
-      ctxMenu.MenuItems.Add(item);
+      ctxKeysMenu.MenuItems.Add(item);
       item = new MenuItem();
       item.Text = App.GetStr("Ctrl-Esc (Start Menu)");
       item.Click += keysHdr;
-      ctxMenu.MenuItems.Add(item);
-      CheckRotate(ctxMenu);
+      ctxKeysMenu.MenuItems.Add(item);
     }
   }
 }

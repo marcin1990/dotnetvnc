@@ -214,6 +214,8 @@ namespace Vnc.Viewer
       pixelSizeBox.Width = displayPanel.ClientRectangle.Right - App.DialogSpacing - pixelSizeBox.Left;
       displayPanel.Controls.Add(pixelSizeBox);
 
+      cliScalingWidthLbl.Size = graphics.MeasureString(cliScalingWidthLbl.Text, Font).ToSize();
+      cliScalingHeightLbl.Size = graphics.MeasureString(cliScalingHeightLbl.Text, Font).ToSize();
       scalingPanel.Size = ClientRectangle.Size;
       Controls.Add(scalingPanel);
       cliScalingLbl.Location = new Point(App.DialogSpacing, App.DialogSpacing);
@@ -223,13 +225,13 @@ namespace Vnc.Viewer
       cliScalingBox.Width = scalingPanel.ClientRectangle.Right - App.DialogSpacing - cliScalingBox.Left;
       scalingPanel.Controls.Add(cliScalingBox);
       cliScalingWidthLbl.Location = new Point(App.DialogSpacing, cliScalingBox.Bottom + App.DialogSpacing);
-      cliScalingWidthLbl.Size = graphics.MeasureString(cliScalingWidthLbl.Text, Font).ToSize();
+      cliScalingWidthLbl.Width = Math.Max(cliScalingWidthLbl.Width, cliScalingHeightLbl.Width);
       scalingPanel.Controls.Add(cliScalingWidthLbl);
       cliScalingWidthBox.Location = new Point(cliScalingWidthLbl.Right + App.DialogSpacing, cliScalingWidthLbl.Top);
       cliScalingWidthBox.Width = scalingPanel.ClientRectangle.Right - App.DialogSpacing - cliScalingWidthBox.Left;
       scalingPanel.Controls.Add(cliScalingWidthBox);
       cliScalingHeightLbl.Location = new Point(App.DialogSpacing, cliScalingWidthBox.Bottom + App.DialogSpacing);
-      cliScalingHeightLbl.Size = graphics.MeasureString(cliScalingHeightLbl.Text, Font).ToSize();
+      cliScalingHeightLbl.Width = cliScalingWidthLbl.Width;
       scalingPanel.Controls.Add(cliScalingHeightLbl);
       cliScalingHeightBox.Location = new Point(cliScalingHeightLbl.Right + App.DialogSpacing, cliScalingHeightLbl.Top);
       cliScalingHeightBox.Width = scalingPanel.ClientRectangle.Right - App.DialogSpacing - cliScalingHeightBox.Left;
