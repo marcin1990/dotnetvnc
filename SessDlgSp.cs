@@ -132,6 +132,7 @@ namespace Vnc.Viewer
       othersPanel.Size = ClientRectangle.Size;
       viewOnlyBox.Width = othersPanel.ClientRectangle.Right - viewOnlyBox.Left;
       shareServBox.Width = othersPanel.ClientRectangle.Right - shareServBox.Left;
+      scrnUpdAlgoBox.Width = othersPanel.ClientRectangle.Right - scrnUpdAlgoBox.Left;
       sendMouseLocWhenIdleBox.Width = othersPanel.ClientRectangle.Right - sendMouseLocWhenIdleBox.Left;
     }
 
@@ -245,8 +246,11 @@ namespace Vnc.Viewer
       shareServBox.Location = new Point(App.DialogSpacing, viewOnlyBox.Bottom + App.DialogSpacing);
       shareServBox.Width = othersPanel.ClientRectangle.Right - shareServBox.Left;
       othersPanel.Controls.Add(shareServBox);
+      scrnUpdAlgoBox.Location = new Point(App.DialogSpacing, shareServBox.Bottom + App.DialogSpacing);
+      scrnUpdAlgoBox.Width = othersPanel.ClientRectangle.Right - scrnUpdAlgoBox.Left;
+      othersPanel.Controls.Add(scrnUpdAlgoBox);
       sendMouseLocWhenIdleBox.Text = App.GetStr("Send mouse location when idle");
-      sendMouseLocWhenIdleBox.Location = new Point(App.DialogSpacing, shareServBox.Bottom + App.DialogSpacing);
+      sendMouseLocWhenIdleBox.Location = new Point(App.DialogSpacing, scrnUpdAlgoBox.Bottom + App.DialogSpacing);
       sendMouseLocWhenIdleBox.Width = othersPanel.ClientRectangle.Right - sendMouseLocWhenIdleBox.Left;
       othersPanel.Controls.Add(sendMouseLocWhenIdleBox);
 

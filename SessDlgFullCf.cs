@@ -192,6 +192,7 @@ namespace Vnc.Viewer
       cliScalingHeightBox.Width = scalingPage.ClientRectangle.Right - App.DialogSpacing - cliScalingHeightBox.Left;
       viewOnlyBox.Width = othersPage.ClientRectangle.Right - viewOnlyBox.Left;
       shareServBox.Width = othersPage.ClientRectangle.Right - shareServBox.Left;
+      scrnUpdAlgoBox.Width = othersPage.ClientRectangle.Right - scrnUpdAlgoBox.Left;
       saveConnOptsBtn.Width = saveLoadPage.ClientRectangle.Right - App.DialogSpacing - saveConnOptsBtn.Left;
       saveConnOptsPwdBtn.Width = saveLoadPage.ClientRectangle.Right - App.DialogSpacing - saveConnOptsPwdBtn.Left;
       loadConnOptsBtn.Width = saveLoadPage.ClientRectangle.Right - App.DialogSpacing - loadConnOptsBtn.Left;
@@ -318,6 +319,10 @@ namespace Vnc.Viewer
       shareServBox.KeyPress += keyPressHdr;
       shareServBox.Width = othersPage.ClientRectangle.Right - shareServBox.Left;
       othersPage.Controls.Add(shareServBox);
+      scrnUpdAlgoBox.Location = new Point(shareServBox.Left, shareServBox.Bottom + App.DialogSpacing);
+      scrnUpdAlgoBox.KeyPress += keyPressHdr;
+      scrnUpdAlgoBox.Width = othersPage.ClientRectangle.Right - scrnUpdAlgoBox.Left;
+      othersPage.Controls.Add(scrnUpdAlgoBox);
 
       tabCtrl.TabPages.Add(saveLoadPage);
       saveLoadPage.Text = App.GetStr("Re/Store");

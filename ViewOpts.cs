@@ -53,6 +53,12 @@ namespace Vnc.Viewer
     Custom
   }
 
+  internal enum ScrnUpdAlgo
+  {
+    Batch,
+    Asap
+  }
+
   /// <remarks>This class is responsible for loading and saving view options.</remarks>
   internal class ViewOpts
   {
@@ -80,6 +86,9 @@ namespace Vnc.Viewer
     private const string HeightName = "Height";
     private const string ShareServName = "ShareServer";
     private const string ViewOnlyName = "ViewOnly";
+    private const string ScrnUpdAlgoName = "ScrnUpdAlgo";
+    private const string BatchName = "Batch";
+    private const string AsapName = "Asap";
     private const string SendMouseLocWhenIdleName = "SendMouseLocationWhenIdle";
 
     internal PixelSize PixelSize = PixelSize.Force8Bit;
@@ -90,6 +99,7 @@ namespace Vnc.Viewer
     internal UInt16 CliScalingHeight = 0;
     internal bool ShareServ = true;
     internal bool ViewOnly = false;
+    internal ScrnUpdAlgo ScrnUpdAlgo = ScrnUpdAlgo.Batch;
     internal bool SendMouseLocWhenIdle = false;
 
     internal ViewOpts()
@@ -193,6 +203,18 @@ namespace Vnc.Viewer
 
       elem = doc.CreateElement(ViewOnlyName);
       elem.InnerText = ViewOnly.ToString();
+      rootElem.AppendChild(elem);
+
+      elem = doc.CreateElement(ScrnUpdAlgoName);
+      switch(ScrnUpdAlgo)
+      {
+        case ScrnUpdAlgo.Asap:
+          elem.InnerText = AsapName;
+          break;
+        default:
+          elem.InnerText = BatchName;
+          break;
+      }
       rootElem.AppendChild(elem);
 
       elem = doc.CreateElement(SendMouseLocWhenIdleName);
@@ -329,6 +351,24 @@ namespace Vnc.Viewer
 
       elem = FindXmlElem(doc, rootElem, ShareServName);
       ShareServ = Boolean.Parse(elem.InnerText);
+
+      try
+      {
+        elem = FindXmlElem(doc, rootElem, ScrnUpdAlgoName);
+        switch(elem.InnerText)
+        {
+          case AsapName:
+            ScrnUpdAlgo = ScrnUpdAlgo.Asap;
+            break;
+          default:
+            ScrnUpdAlgo = ScrnUpdAlgo.Batch;
+            break;
+        }
+      }
+      catch(FormatException)
+      {
+        ScrnUpdAlgo = ScrnUpdAlgo.Batch;
+      }
 
       try
       {

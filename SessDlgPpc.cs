@@ -47,6 +47,7 @@ namespace Vnc.Viewer
       cliScalingHeightBox.Height *= 2;
       viewOnlyBox.Height *= 2;
       shareServBox.Height *= 2;
+      scrnUpdAlgoBox.Height *= 2;
       okBtn.Height *= 2;
       okBtn.Width *= 2;
       cancelBtn.Height *= 2;

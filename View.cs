@@ -1364,6 +1364,17 @@ namespace Vnc.Viewer
       }
     }
 
+    private void ScrnUpdAlgoClicked(object sender, EventArgs e)
+    {
+      connOpts.ViewOpts.ScrnUpdAlgo = (connOpts.ViewOpts.ScrnUpdAlgo == ScrnUpdAlgo.Asap)? ScrnUpdAlgo.Batch : ScrnUpdAlgo.Asap;
+      for(int i = 0; i < optionsMenu.MenuItems.Count; i++)
+      {
+        MenuItem item = optionsMenu.MenuItems[i];
+        if(item.Text == App.GetStr("Update screen ASAP"))
+          item.Checked = connOpts.ViewOpts.ScrnUpdAlgo == ScrnUpdAlgo.Asap;
+      }
+    }
+
     private void RefreshClicked(object sender, EventArgs e)
     {
       try
@@ -1664,6 +1675,11 @@ namespace Vnc.Viewer
       item.Text = App.GetStr("View only");
       item.Checked = connOpts.ViewOpts.ViewOnly;
       item.Click += new EventHandler(ViewOnlyClicked);
+      optionsMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("Update screen ASAP");
+      item.Checked = connOpts.ViewOpts.ScrnUpdAlgo == ScrnUpdAlgo.Asap;
+      item.Click += new EventHandler(ScrnUpdAlgoClicked);
       optionsMenu.MenuItems.Add(item);
 
       aboutItem = new MenuItem();

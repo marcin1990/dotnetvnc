@@ -64,6 +64,7 @@ namespace Vnc.Viewer
 
     protected CheckBox viewOnlyBox = new CheckBox();
     protected CheckBox shareServBox = new CheckBox();
+    protected CheckBox scrnUpdAlgoBox = new CheckBox();
 
     protected EventHandler okHdr = null;
     protected EventHandler cancelHdr = null;
@@ -319,6 +320,7 @@ namespace Vnc.Viewer
       }
       viewOpts.ViewOnly = viewOnlyBox.Checked;
       viewOpts.ShareServ = !shareServBox.Checked;
+      viewOpts.ScrnUpdAlgo = scrnUpdAlgoBox.Checked? ScrnUpdAlgo.Asap : ScrnUpdAlgo.Batch;
     }
 
     protected virtual void SetOptions(ViewOpts viewOpts)
@@ -385,6 +387,7 @@ namespace Vnc.Viewer
       }
       viewOnlyBox.Checked = viewOpts.ViewOnly;
       shareServBox.Checked = !viewOpts.ShareServ;
+      scrnUpdAlgoBox.Checked = viewOpts.ScrnUpdAlgo == ScrnUpdAlgo.Asap;
     }
 
     private void SaveConnHist()
@@ -543,6 +546,7 @@ namespace Vnc.Viewer
 
       viewOnlyBox.Text = App.GetStr("View only (ignore input)");
       shareServBox.Text = App.GetStr("Disconnect other viewers upon connect");
+      scrnUpdAlgoBox.Text = App.GetStr("Update screen ASAP");
 
       SetOptions(viewOpts);
       LoadConnHist();

@@ -625,7 +625,8 @@ namespace Vnc.Viewer
           if((encoding & RfbHexSubEncoding.Raw) != 0)
           {
             ReadRawRect(tile);
-            view.InvalidateRect(tile);
+            if(opts.ViewOpts.ScrnUpdAlgo == ScrnUpdAlgo.Asap)
+              view.InvalidateRect(tile);
             continue;
           }
 
@@ -655,7 +656,8 @@ namespace Vnc.Viewer
           for(int i = 0; i < numSubRects; i++)
             subRects[i] = new HexSubRectMsg(rectBytes, (UInt32)(i * subRectSize), bytesPp, subRectsColored, fgPixel);
           FillRreRect(tile, bgColor, subRects);
-          view.InvalidateRect(tile);
+          if(opts.ViewOpts.ScrnUpdAlgo == ScrnUpdAlgo.Asap)
+            view.InvalidateRect(tile);
         }
       }
     }
@@ -687,19 +689,23 @@ namespace Vnc.Viewer
         {
           case RfbEncoding.Raw:
             ReadRawRect(rect);
-            view.InvalidateRect(rect);
+            if(opts.ViewOpts.ScrnUpdAlgo == ScrnUpdAlgo.Asap)
+              view.InvalidateRect(rect);
             break;
           case RfbEncoding.CopyRect:
             ReadCopyRect(rect);
-            view.InvalidateRect(rect);
+            if(opts.ViewOpts.ScrnUpdAlgo == ScrnUpdAlgo.Asap)
+              view.InvalidateRect(rect);
             break;
           case RfbEncoding.Rre:
             ReadRreRect(rect);
-            view.InvalidateRect(rect);
+            if(opts.ViewOpts.ScrnUpdAlgo == ScrnUpdAlgo.Asap)
+              view.InvalidateRect(rect);
             break;
           case RfbEncoding.CoRre:
             ReadCoRreRect(rect);
-            view.InvalidateRect(rect);
+            if(opts.ViewOpts.ScrnUpdAlgo == ScrnUpdAlgo.Asap)
+              view.InvalidateRect(rect);
             break;
           case RfbEncoding.Hex:
             ReadHexRect(rect);
@@ -708,6 +714,9 @@ namespace Vnc.Viewer
             throw new WarnEx(App.GetStr("Server is using unknown encoding!"));
         }
       }
+
+      if(opts.ViewOpts.ScrnUpdAlgo != ScrnUpdAlgo.Asap)
+        view.Invalidate();
 
       // Do this in the UI thread so we always send data in one thread.
       view.SendUpdReq();
