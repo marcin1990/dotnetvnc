@@ -39,8 +39,6 @@ namespace Vnc.Viewer
   {
     private const byte Delta = 50; // TODO: Find an optimal value.
     private const byte BgDelta = 100;  // TODO: Find an optimal value.
-    private const byte TileWidth = 128; // TODO: Find an optimal value.
-    private const byte TileHeight = 128; // TODO: Find an optimal value.
 
     private const UInt32 CtrlKey = 0x0000FFE3;
     private const UInt32 AltKey = 0x0000FFE9;
@@ -85,8 +83,6 @@ namespace Vnc.Viewer
     private UInt16 scaledFBWidth = 0;
     private UInt16 rawFBHeight = 0;
     private UInt16 scaledFBHeight = 0;
-    private Rectangle[,] rawFBRects = null;
-    private Rectangle[,] scrnRects = null;
 
     protected int mouseX = 0;
     protected int mouseY = 0;
@@ -556,47 +552,6 @@ namespace Vnc.Viewer
       }
     }
 
-    private void SetupRectMappings()
-    {
-      scrnRects = null;
-      rawFBRects = null;
-
-      // When client-side scaling is not in effect, we don't need any mapping.
-      if(connOpts.ViewOpts.CliScaling == CliScaling.None)
-        return;
-
-      // We setup mappings between areas in the client area and areas in the frame buffer.
-      // When client-side scaling is active, we would like to draw the same area in the client
-      // area with the same block in the frame buffer. If we don't have mappings and perform
-      // real time calculation on OnPaint, the screen will look unstable because of rounding
-      // errors.
-      Rectangle viewable = ViewableRect;
-      int xCount = viewable.Width / TileWidth;
-      if(viewable.Width % TileWidth != 0)
-        xCount++;
-      int yCount = viewable.Height / TileHeight;
-      if(viewable.Height % TileHeight != 0)
-        yCount++;
-      scrnRects = new Rectangle[xCount, yCount];
-      rawFBRects = new Rectangle[xCount, yCount];
-      for(int y = viewable.Top; y < viewable.Bottom; y += TileHeight)
-      {
-        for(int x = viewable.Left; x < viewable.Right; x += TileWidth)
-        {
-          Rectangle scrnRect = new Rectangle(x, y, TileWidth, TileHeight);
-          if(scrnRect.Right > viewable.Right)
-            scrnRect.Width = viewable.Right - scrnRect.Left;
-          if(scrnRect.Bottom > viewable.Bottom)
-            scrnRect.Height = viewable.Bottom - scrnRect.Top;
-          int xIndex = (x - viewable.Left) / TileWidth;
-          int yIndex = (y - viewable.Top) / TileHeight;
-          scrnRects[xIndex, yIndex] = scrnRect;
-          ScrnToFrameBufRect(ref scrnRect);
-          rawFBRects[xIndex, yIndex] = scrnRect;
-        }
-      }
-    }
-
     private void ResizeCore()
     {
       if(connOpts.ViewOpts.CliScaling == CliScaling.Auto)
@@ -605,7 +560,6 @@ namespace Vnc.Viewer
         scaledFBHeight = (UInt16)ClientSize.Height;
       }
       SetupScrlBars();
-      SetupRectMappings();
       Invalidate();
 
       if(connOpts.ViewOpts.CliScaling == CliScaling.Auto)
@@ -642,7 +596,6 @@ namespace Vnc.Viewer
 
     private void Scrled(object sender, EventArgs e)
     {
-      SetupRectMappings();
       Invalidate();
     }
 
@@ -891,17 +844,12 @@ namespace Vnc.Viewer
         }
         else
         {
-          // When client-side scaling is effective, the mapping ensures that we don't suffer
-          // from rounding error and always draw the same area in the client area with the same
-          // block from the frame buffer.
-          int lowerBoundY = (destRect.Top - viewable.Top) / TileHeight;
-          int upperBoundY = Math.Min((destRect.Bottom - viewable.Top) / TileHeight, scrnRects.GetUpperBound(1));
-          int lowerBoundX = (destRect.Left - viewable.Left) / TileWidth;
-          int upperBoundX = Math.Min((destRect.Right - viewable.Left) / TileWidth, scrnRects.GetUpperBound(0));
+          // We don't limit ourselves to the invalidated area because doing so will introduce
+          // rounding error and the screen will look strange.
+          Rectangle srcRect = viewable;
+          ScrnToFrameBufRect(ref srcRect);
           LockFrameBuf();
-          for(int y = lowerBoundY; y <= upperBoundY; y++)
-            for(int x = lowerBoundX; x <= upperBoundX; x++)
-              graphics.DrawImage(frameBuf, scrnRects[x, y], rawFBRects[x, y], GraphicsUnit.Pixel);
+          graphics.DrawImage(frameBuf, viewable, srcRect, GraphicsUnit.Pixel);
           UnlockFrameBuf();
         }
       }

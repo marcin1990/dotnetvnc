@@ -87,6 +87,19 @@ namespace Vnc.Viewer
     private byte blueShift = 0;
     internal bool IsFmtChgPending = false;
 
+    private EventHandler closeHdr = null;
+
+    internal Conn()
+    {
+      closeHdr = new EventHandler(CloseView);
+    }
+
+    private void CloseView(object sender, EventArgs e)
+    {
+      // Do this in the main thread.
+      view.Close();
+    }
+
     private void ViewClosed(object sender, EventArgs e)
     {
       termBgThread = true;
@@ -702,8 +715,7 @@ namespace Vnc.Viewer
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Exclamation,
                         MessageBoxDefaultButton.Button1);
-        // TODO: Is it safe to call close from this thread?
-        view.Close();
+        view.Invoke(closeHdr);
       }
       catch(IOException)
       {
@@ -712,13 +724,11 @@ namespace Vnc.Viewer
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Exclamation,
                         MessageBoxDefaultButton.Button1);
-        // TODO: Is it safe to call close from this thread?
-        view.Close();
+        view.Invoke(closeHdr);
       }
       catch(QuietEx)
       {
-        // TODO: Is it safe to call close from this thread?
-        view.Close();
+        view.Invoke(closeHdr);
       }
       catch(WarnEx ex)
       {
@@ -727,8 +737,7 @@ namespace Vnc.Viewer
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Exclamation,
                         MessageBoxDefaultButton.Button1);
-        // TODO: Is it safe to call close from this thread?
-        view.Close();
+        view.Invoke(closeHdr);
       }
       finally
       {
