@@ -33,10 +33,36 @@ namespace Vnc.Viewer
   internal class AuthDlg : Form
   {
     private string passwd = null;
+
     private Label passwdLbl = new Label();
     private TextBox passwdBox = new TextBox();
-    private Button logInBtn = new Button();
-    private Button cancelBtn = new Button();
+
+    private Button logInBtn = null;
+    private MenuItem logInItem = null;
+    private Button cancelBtn = null;
+    private MenuItem cancelItem = null;
+
+    internal AuthDlg()
+    {
+      if(App.DevCap.Lvl >= DevCapLvl.PocketPc)
+      {
+        logInBtn = new Button();
+        cancelBtn = new Button();
+        if(App.DevCap.Lvl == DevCapLvl.PocketPc && App.DevCap.Res >= ResLvl.High)
+        {
+          passwdBox.Height *= 2;
+          logInBtn.Width *= 2;
+          logInBtn.Height *= 2;
+          cancelBtn.Width *= 2;
+          cancelBtn.Height *= 2;
+        }
+      }
+      else
+      {
+        logInItem = new MenuItem();
+        cancelItem = new MenuItem();
+      }
+    }
 
     internal string Passwd
     {
@@ -65,6 +91,11 @@ namespace Vnc.Viewer
       DialogResult = DialogResult.Cancel;
     }
 
+    private void CancelClicked(object sender, EventArgs e)
+    {
+      Cancel();
+    }
+
     private void KeyPressed(object sender, KeyPressEventArgs e)
     {
       e.Handled = true;
@@ -85,8 +116,11 @@ namespace Vnc.Viewer
       base.OnResize(e);
 
       passwdBox.Width = ClientRectangle.Right - App.DialogSpacing - passwdBox.Left;
-      cancelBtn.Location = new Point(passwdBox.Right - cancelBtn.Width, passwdBox.Bottom + App.DialogSpacing);
-      logInBtn.Location = new Point(cancelBtn.Left - App.DialogSpacing - logInBtn.Width, cancelBtn.Top);
+      if(App.DevCap.Lvl >= DevCapLvl.PocketPc)
+      {
+        cancelBtn.Location = new Point(passwdBox.Right - cancelBtn.Width, passwdBox.Bottom + App.DialogSpacing);
+        logInBtn.Location = new Point(cancelBtn.Left - App.DialogSpacing - logInBtn.Width, cancelBtn.Top);
+      }
     }
 
     protected override void OnLoad(EventArgs e)
@@ -94,6 +128,7 @@ namespace Vnc.Viewer
       base.OnLoad(e);
 
       KeyPressEventHandler keyPressHdr = new KeyPressEventHandler(KeyPressed);
+      EventHandler logInHdr = new EventHandler(LogInClicked);
 
       ControlBox = false;
       MinimizeBox = false;
@@ -108,24 +143,40 @@ namespace Vnc.Viewer
       graphics.Dispose();
       Controls.Add(passwdLbl);
 
-      passwdBox.Location = new Point(passwdLbl.Right + App.DialogSpacing, passwdLbl.Top);
+      if(App.DevCap.Lvl >= DevCapLvl.PocketPc)
+        passwdBox.Location = new Point(passwdLbl.Right + App.DialogSpacing, passwdLbl.Top);
+      else
+        passwdBox.Location = new Point(App.DialogSpacing, passwdLbl.Bottom + App.DialogSpacing);
       passwdBox.Width = ClientRectangle.Right - App.DialogSpacing - passwdBox.Left;
       passwdBox.PasswordChar = '*';
-      passwdBox.KeyPress += keyPressHdr;
+      if(App.DevCap.Lvl >= DevCapLvl.PocketPc)
+        passwdBox.KeyPress += keyPressHdr;
       Controls.Add(passwdBox);
 
-      cancelBtn.Location = new Point(passwdBox.Right - cancelBtn.Width, passwdBox.Bottom + App.DialogSpacing);
-      cancelBtn.Text = App.GetStr("Cancel");
-      cancelBtn.DialogResult = DialogResult.Cancel;
-      cancelBtn.KeyPress += keyPressHdr;
+      if(App.DevCap.Lvl >= DevCapLvl.PocketPc)
+      {
+        cancelBtn.Location = new Point(passwdBox.Right - cancelBtn.Width, passwdBox.Bottom + App.DialogSpacing);
+        cancelBtn.Text = App.GetStr("Cancel");
+        cancelBtn.DialogResult = DialogResult.Cancel;
+        cancelBtn.KeyPress += keyPressHdr;
 
-      logInBtn.Location = new Point(cancelBtn.Left - App.DialogSpacing - logInBtn.Width, cancelBtn.Top);
-      logInBtn.Text = App.GetStr("Log In");
-      logInBtn.Click += new EventHandler(LogInClicked);
-      logInBtn.KeyPress += keyPressHdr;
+        logInBtn.Location = new Point(cancelBtn.Left - App.DialogSpacing - logInBtn.Width, cancelBtn.Top);
+        logInBtn.Text = App.GetStr("Log In");
+        logInBtn.Click += logInHdr;
+        logInBtn.KeyPress += keyPressHdr;
 
-      Controls.Add(logInBtn);
-      Controls.Add(cancelBtn);
+        Controls.Add(logInBtn);
+        Controls.Add(cancelBtn);
+      }
+      else
+      {
+        logInItem.Text = App.GetStr("Log In");
+        logInItem.Click += logInHdr;
+        Menu.MenuItems.Add(logInItem);
+        cancelItem.Text = App.GetStr("Cancel");
+        cancelItem.Click += new EventHandler(CancelClicked);
+        Menu.MenuItems.Add(cancelItem);
+      }
 
       passwdBox.Focus();
     }
