@@ -9,6 +9,8 @@ Project Web
 SourceForge
 	-News
 	-Introduction
+freewareppc
+	-Description
 
 
 File Releases Checklist
@@ -19,6 +21,7 @@ File Releases Checklist
 -Create a new release and upload the new files.
 -Export the web.
 -Create a News at SourceForge.
+-Update freewareppc.
 
 Documentation Modification Checklist
 ===================================
@@ -26,6 +29,7 @@ Documentation Modification Checklist
 -Modify README.txt accordingly and mark it in history.
 -Modify Project Web accordingly and mark it in history.
 -README.txt and Project Web will be effective at the next release.
+-Update freewareppc.
 
 News
 ====
