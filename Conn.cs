@@ -32,6 +32,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Drawing;
+using System.Reflection;
 using System.Windows.Forms;
 using System.Collections;
 using Vnc.RfbProto;
@@ -55,10 +56,15 @@ namespace Vnc.Viewer
     private const byte ViewerRfbMajorVer = 3;
     private const byte ViewerRfbMinorVer = 4;
 
+    private static MethodInfo estConnInfo = null;
+    private static MethodInfo relConnInfo = null;
+
     // These are cleaned up upon termination because they contain initial
     // values of a connection object.
     private ConnOpts opts = null;
     private ViewOpts viewOpts = null;
+
+    private Int32 hConn = 0;
 
     // These are cleaned up upon termination because they contain
     // unmanaged resources.
@@ -351,6 +357,49 @@ namespace Vnc.Viewer
       WriteBytes(msg);
     }
 
+    private void EstConn()
+    {
+      // We use the connection manager on PPCs and Smartphones.
+      if(App.DevCap.Lvl >= DevCapLvl.Desktop)
+        return;
+
+      try
+      {
+        if(estConnInfo == null)
+        {
+          Type webReqType = WebRequest.Create("http://localhost/").GetType();
+          Type connMgrType = webReqType.Assembly.GetType("System.Net.ConnMgr");
+          estConnInfo = connMgrType.GetMethod("EstablishConnectionForUrl", BindingFlags.InvokeMethod | BindingFlags.Public | BindingFlags.Static);
+          relConnInfo = connMgrType.GetMethod("ReleaseConnection", BindingFlags.InvokeMethod | BindingFlags.Public | BindingFlags.Static);
+        }
+        Int32 ec = 0;
+        Object[] parameters = new Object[] {"http://" + opts.Host + "/", ec};
+        hConn = (Int32)estConnInfo.Invoke(null, parameters);
+      }
+      catch(Exception)
+      {
+        // Eat all exceptions.
+      }
+    }
+
+    private void RelConn()
+    {
+      // We use the connection manager on PPCs and Smartphones.
+      if(App.DevCap.Lvl >= DevCapLvl.Desktop)
+        return;
+
+      try
+      {
+        if(hConn == 0)
+          return;
+        relConnInfo.Invoke(null, new Object[] {hConn});
+      }
+      catch(Exception)
+      {
+        // Eat all exceptions.
+      }
+    }
+
     private void CleanUp()
     {
       // We don't cleanup majorVer, minorVer, etc. here because
@@ -375,6 +424,7 @@ namespace Vnc.Viewer
         tcpClient.Close();
         tcpClient = null;
       }
+      RelConn();
       opts = null;
       viewOpts = null;
     }
@@ -398,6 +448,9 @@ namespace Vnc.Viewer
         // Get connection details from the user.
         if(opts == null)
           GetConnDetails();
+
+        // Establish a connection with the connection manager.
+        EstConn();
 
         // Make a connection to the server.
         Connect();
