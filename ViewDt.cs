@@ -29,9 +29,6 @@ namespace Vnc.Viewer
 {
   internal class ViewDt : ViewFullCf
   {
-    private bool leftBtnDown = false;
-    private bool rightBtnDown = false;
-
     private void GetMouseButtons(out bool leftBtnDown, out bool rightBtnDown)
     {
       leftBtnDown = ((MouseButtons & MouseButtons.Left) != 0);

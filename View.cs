@@ -83,6 +83,8 @@ namespace Vnc.Viewer
 
     protected int mouseX = 0;
     protected int mouseY = 0;
+    protected bool leftBtnDown = false;
+    protected bool rightBtnDown = false;
     protected UInt16 tapHoldCnt = 0;
 
     private bool toKeyUpCtrl = false;
@@ -757,6 +759,188 @@ namespace Vnc.Viewer
     {
       byte[] msg = RfbProtoUtil.GetKeyEventMsg(isDown, keyChar);
       conn.WriteBytes(msg, RfbCliMsgType.KeyEvent);
+    }
+
+    protected void OnKeyEvent(Keys keyCode, bool isDown)
+    {
+      if(connOpts.ViewOpts.ViewOnly)
+        return;
+
+      UInt32 keyChar = 0;
+      bool isProcessed = true;
+      switch(keyCode)
+      {
+        case Keys.Enter:
+          keyChar = EnterKey;
+          break;
+        case Keys.Tab:
+          keyChar = 0x0000FF09;
+          break;
+        case Keys.Escape:
+          keyChar = EscKey;
+          break;
+        case Keys.ShiftKey:
+          keyChar = 0x0000FFE1;
+          break;
+        case Keys.ControlKey:
+          keyChar = CtrlKey;
+          break;
+        case Keys.Menu:
+          keyChar = AltKey;
+          break;
+        case Keys.Insert:
+          keyChar = 0x0000FF63;
+          break;
+        case Keys.Delete:
+          keyChar = DelKey;
+          break;
+        case Keys.Home:
+          keyChar = 0x0000FF50;
+          break;
+        case Keys.End:
+          keyChar = 0x0000FF57;
+          break;
+        case Keys.PageUp:
+          keyChar = 0x0000FF55;
+          break;
+        case Keys.PageDown:
+          keyChar = 0x0000FF56;
+          break;
+        case Keys.Left:
+          switch(connOpts.ViewOpts.Orientation)
+          {
+            case Orientation.Landscape90:
+              keyChar = 0x0000FF52;
+              break;
+            case Orientation.Portrait180:
+              keyChar = 0x0000FF53;
+              break;
+            case Orientation.Landscape270:
+              keyChar = 0x0000FF54;
+              break;
+            default:
+              keyChar = 0x0000FF51;
+              break;
+          }
+          break;
+        case Keys.Up:
+          switch(connOpts.ViewOpts.Orientation)
+          {
+            case Orientation.Landscape90:
+              keyChar = 0x0000FF53;
+              break;
+            case Orientation.Portrait180:
+              keyChar = 0x0000FF54;
+              break;
+            case Orientation.Landscape270:
+              keyChar = 0x0000FF51;
+              break;
+            default:
+              keyChar = 0x0000FF52;
+              break;
+          }
+          break;
+        case Keys.Right:
+          switch(connOpts.ViewOpts.Orientation)
+          {
+            case Orientation.Landscape90:
+              keyChar = 0x0000FF54;
+              break;
+            case Orientation.Portrait180:
+              keyChar = 0x0000FF51;
+              break;
+            case Orientation.Landscape270:
+              keyChar = 0x0000FF52;
+              break;
+            default:
+              keyChar = 0x0000FF53;
+              break;
+          }
+          break;
+        case Keys.Down:
+          switch(connOpts.ViewOpts.Orientation)
+          {
+            case Orientation.Landscape90:
+              keyChar = 0x0000FF51;
+              break;
+            case Orientation.Portrait180:
+              keyChar = 0x0000FF52;
+              break;
+            case Orientation.Landscape270:
+              keyChar = 0x0000FF53;
+              break;
+            default:
+              keyChar = 0x0000FF54;
+              break;
+          }
+          break;
+        case Keys.F1:
+        case Keys.F2:
+        case Keys.F3:
+        case Keys.F4:
+        case Keys.F5:
+        case Keys.F6:
+        case Keys.F7:
+        case Keys.F8:
+        case Keys.F9:
+        case Keys.F10:
+        case Keys.F11:
+        case Keys.F12:
+          keyChar = 0x0000FFBE + ((UInt32)keyCode - (UInt32)Keys.F1);
+          break;
+        default:
+          isProcessed = false;
+          break;
+      }
+
+      if(isProcessed)
+      {
+        try
+        {
+          OnKeyEvent(keyChar, isDown);
+          SpecKeyUp();
+        }
+        catch(IOException)
+        {
+          Close();
+        }
+      }
+    }
+
+    protected override void OnKeyPress(KeyPressEventArgs e)
+    {
+      base.OnKeyPress(e);
+      if(e.Handled)
+        return;
+
+      if(connOpts.ViewOpts.ViewOnly)
+        return;
+
+      try
+      {
+        if(Char.IsLetterOrDigit(e.KeyChar) ||
+           Char.IsPunctuation(e.KeyChar) ||
+           Char.IsWhiteSpace(e.KeyChar) ||
+           e.KeyChar == '~' || e.KeyChar == '`' || e.KeyChar == '<' || e.KeyChar == '>' ||
+           e.KeyChar == '|' || e.KeyChar == '=' || e.KeyChar == '+' || e.KeyChar == '$' ||
+           e.KeyChar == '^')
+        {
+          OnKeyEvent((UInt32)e.KeyChar, true);
+          OnKeyEvent((UInt32)e.KeyChar, false);
+        }
+        else if(e.KeyChar == '\b')
+        {
+          UInt32 keyChar = (UInt32)e.KeyChar;
+          keyChar |= 0x0000FF00;
+          OnKeyEvent(keyChar, true);
+          OnKeyEvent(keyChar, false);
+        }
+        SpecKeyUp();
+      }
+      catch(IOException)
+      {
+        Close();
+      }
     }
 
     protected void SpecKeyUp()

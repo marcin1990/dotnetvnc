@@ -34,9 +34,12 @@ namespace Vnc.Viewer
       timer.Enabled = false;
       Invalidate(); // TODO: Calculate the area to invalidate.
 
+      // This stylus tap is for a right mouse click.
+      leftBtnDown = false;
+
       // Simulate a right click.
-      OnMouseEvent(mouseX, mouseY, false, true);
-      OnMouseEvent(mouseX, mouseY, false, false);
+      OnMouseEvent(mouseX, mouseY, leftBtnDown, true);
+      OnMouseEvent(mouseX, mouseY, leftBtnDown, false);
     }
 
     protected override void Ticked(object sender, EventArgs e)
@@ -79,8 +82,10 @@ namespace Vnc.Viewer
 
       int mouseX = this.mouseX;
       int mouseY = this.mouseY;
+      bool leftBtnDown = this.leftBtnDown;
       this.mouseX = e.X;
       this.mouseY = e.Y;
+      this.leftBtnDown = false;
 
       if(timer.Enabled)
       {
@@ -98,12 +103,12 @@ namespace Vnc.Viewer
         else
         {
           // Send the "delayed" mouse event.
-          OnMouseEvent(mouseX, mouseY, true, false);
-          OnMouseEvent(this.mouseX, this.mouseY, false, false);
+          OnMouseEvent(mouseX, mouseY, leftBtnDown, false);
+          OnMouseEvent(this.mouseX, this.mouseY, this.leftBtnDown, false);
         }
       }
       else
-        OnMouseEvent(this.mouseX, this.mouseY, false, false);
+        OnMouseEvent(this.mouseX, this.mouseY, this.leftBtnDown, false);
     }
 
     protected override void OnMouseDown(MouseEventArgs e)
@@ -112,6 +117,7 @@ namespace Vnc.Viewer
 
       mouseX = e.X;
       mouseY = e.Y;
+      leftBtnDown = true;
       timer.Enabled = true; // Tap-and-Hold active.
       tapHoldCnt = 0;
     }
@@ -131,12 +137,12 @@ namespace Vnc.Viewer
         Invalidate(); // TODO: Calculate the area to invalidate.
 
         // Send the "delayed" mouse event.
-        OnMouseEvent(mouseX, mouseY, true, false);
+        OnMouseEvent(mouseX, mouseY, leftBtnDown, false);
       }
 
       mouseX = e.X;
       mouseY = e.Y;
-      OnMouseEvent(mouseX, mouseY, true, false);
+      OnMouseEvent(mouseX, mouseY, leftBtnDown, false);
     }
 
     internal ViewPpc(Conn conn, ConnOpts connOpts, UInt16 width, UInt16 height) : base(conn, connOpts, width, height)

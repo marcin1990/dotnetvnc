@@ -30,14 +30,15 @@ namespace Vnc.Viewer
   internal class ViewSp : View
   {
     private const byte CursorDelta = 100; // TODO: Find an optimal value.
+    private const UInt16 InputDelta = 5000; // TODO: Find an optimal value.
     private static readonly Pen RedPen = new Pen(App.Red);
 
     private Timer cursorTimer = new Timer();
     private int xSpeed = 0;
     private int ySpeed = 0;
 
-    private bool leftBtnDown = false;
-    private bool rightBtnDown = false;
+    private Timer inputTimer = new Timer();
+    private TextBox inputBox = new TextBox();
 
     private void LeftClicked(object sender, EventArgs e)
     {
@@ -57,43 +58,6 @@ namespace Vnc.Viewer
       Invalidate(); // TODO: Calculate the area to invalidate.
       // Send the "delayed" mouse event.
       OnMouseEvent(mouseX, mouseY, leftBtnDown, rightBtnDown);
-    }
-
-    protected override void OnKeyDown(KeyEventArgs e)
-    {
-      base.OnKeyDown(e);
-      if(e.Handled)
-        return;
-
-      if(timer.Enabled && e.KeyCode != Keys.F2)
-        CancelExitFullScrn();
-
-      switch(e.KeyCode)
-      {
-        case Keys.F1:
-          leftBtnDown = true;
-          OnMouseEvent(mouseX, mouseY, leftBtnDown, rightBtnDown);
-          break;
-        case Keys.F2:
-          if(timer.Enabled) // Repeated KeyDown in this case.
-            return;
-          rightBtnDown = true;
-          timer.Enabled = true; // Tap-and-Hold active.
-          tapHoldCnt = 0;
-          break;
-        case Keys.Up:
-          ySpeed -= 3; // TODO: Find an optimal value.
-          break;
-        case Keys.Down:
-          ySpeed += 3; // TODO: Find an optimal value.
-          break;
-        case Keys.Left:
-          xSpeed -= 3; // TODO: Find an optimal value.
-          break;
-        case Keys.Right:
-          xSpeed += 3; // TODO: Find an optimal value.
-          break;
-      }
     }
 
     private void CursorTicked(object sender, EventArgs e)
@@ -167,27 +131,6 @@ namespace Vnc.Viewer
       }
     }
 
-    protected override void OnKeyUp(KeyEventArgs e)
-    {
-      base.OnKeyUp(e);
-      if(e.Handled)
-        return;
-
-      if(timer.Enabled)
-        CancelExitFullScrn();
-
-      if(e.KeyCode == Keys.F1)
-      {
-        leftBtnDown = false;
-        OnMouseEvent(mouseX, mouseY, leftBtnDown, rightBtnDown);
-      }
-      else if(e.KeyCode == Keys.F2)
-      {
-        rightBtnDown = false;
-        OnMouseEvent(mouseX, mouseY, leftBtnDown, rightBtnDown);
-      }
-    }
-
     protected override void Ticked(object sender, EventArgs e)
     {
       if(!timer.Enabled)
@@ -210,6 +153,131 @@ namespace Vnc.Viewer
       }
     }
 
+    private void InputTicked(object sender, EventArgs e)
+    {
+      inputBox.Visible = false;
+      inputTimer.Enabled = false;
+      Focus();
+    }
+
+    protected override void OnKeyDown(KeyEventArgs e)
+    {
+      base.OnKeyDown(e);
+      if(e.Handled)
+        return;
+
+      if(timer.Enabled && e.KeyCode != Keys.F2)
+        CancelExitFullScrn();
+
+      switch(e.KeyCode)
+      {
+        case Keys.F1:
+          leftBtnDown = true;
+          OnMouseEvent(mouseX, mouseY, leftBtnDown, rightBtnDown);
+          break;
+        case Keys.F2:
+          if(timer.Enabled) // Repeated KeyDown in this case.
+            return;
+          rightBtnDown = true;
+          timer.Enabled = true; // Tap-and-Hold active.
+          tapHoldCnt = 0;
+          break;
+        case Keys.Up:
+          ySpeed -= 3; // TODO: Find an optimal value.
+          break;
+        case Keys.Down:
+          ySpeed += 3; // TODO: Find an optimal value.
+          break;
+        case Keys.Left:
+          xSpeed -= 3; // TODO: Find an optimal value.
+          break;
+        case Keys.Right:
+          xSpeed += 3; // TODO: Find an optimal value.
+          break;
+        case Keys.F8:
+          inputTimer.Enabled = true;
+          inputBox.Text = String.Empty;
+          switch(connOpts.ViewOpts.Orientation)
+          {
+            case Orientation.Landscape90:
+              inputBox.Location = new Point(ClientRectangle.Width - inputBox.Width, 0);
+              break;
+            case Orientation.Portrait180:
+              inputBox.Location = new Point(0, 0);
+              break;
+            case Orientation.Landscape270:
+              inputBox.Location = new Point(0, ClientRectangle.Height - inputBox.Height);
+              break;
+            default:
+              inputBox.Location = new Point(ClientRectangle.Width - inputBox.Width, ClientRectangle.Height - inputBox.Height);
+              break;
+          }
+          inputBox.Visible = true;
+          inputBox.Focus();
+          break;
+      }
+    }
+
+    protected override void OnKeyUp(KeyEventArgs e)
+    {
+      base.OnKeyUp(e);
+      if(e.Handled)
+        return;
+
+      if(timer.Enabled)
+        CancelExitFullScrn();
+
+      if(e.KeyCode == Keys.F1)
+      {
+        leftBtnDown = false;
+        OnMouseEvent(mouseX, mouseY, leftBtnDown, rightBtnDown);
+      }
+      else if(e.KeyCode == Keys.F2)
+      {
+        rightBtnDown = false;
+        OnMouseEvent(mouseX, mouseY, leftBtnDown, rightBtnDown);
+      }
+    }
+
+    private void ResetInputTimer()
+    {
+      // TODO: Which of the following statements are need to reset the timer?
+      inputTimer.Enabled = false;
+      inputTimer.Interval = 0;
+      inputTimer.Interval = InputDelta;
+      inputTimer.Enabled = true;
+    }
+
+    private void OnInputKeyDown(object sender, KeyEventArgs e)
+    {
+      if(e.Handled)
+        return;
+
+      ResetInputTimer();
+      OnKeyEvent(e.KeyCode, true);
+    }
+
+    private void OnInputKeyUp(object sender, KeyEventArgs e)
+    {
+      if(e.Handled)
+        return;
+
+      ResetInputTimer();
+      OnKeyEvent(e.KeyCode, false);
+    }
+
+    private void OnInputKeyPress(object sender, KeyPressEventArgs e)
+    {
+      ResetInputTimer();
+      OnKeyPress(e);
+    }
+
+    private void OnInputTextChanged(object sender, EventArgs e)
+    {
+      if(inputBox.TextLength > 0)
+        inputBox.Text = String.Empty;
+    }
+
     protected override void OnPaint(PaintEventArgs e)
     {
       base.OnPaint(e);
@@ -223,6 +291,7 @@ namespace Vnc.Viewer
     {
       base.OnClosed(e);
       cursorTimer.Enabled = false;
+      inputTimer.Enabled = false;
     }
 
     internal ViewSp(Conn conn, ConnOpts connOpts, UInt16 width, UInt16 height) : base(conn, connOpts, width, height)
@@ -260,6 +329,22 @@ namespace Vnc.Viewer
       cursorTimer.Tick += new EventHandler(CursorTicked);
       cursorTimer.Interval = CursorDelta;
       cursorTimer.Enabled = true;
+
+      Graphics graphics = CreateGraphics();
+
+      inputTimer.Tick += new EventHandler(InputTicked);
+      inputTimer.Interval = InputDelta;
+      inputBox.Visible = false;
+      inputBox.MaxLength = 1;
+      inputBox.Size = graphics.MeasureString("M", Font).ToSize(); // M should be the widest character
+      inputBox.Width += App.DialogSpacing; // Give the textbox some more space.
+      inputBox.TextChanged += new EventHandler(OnInputTextChanged);
+      inputBox.KeyDown += new KeyEventHandler(OnInputKeyDown);
+      inputBox.KeyUp += new KeyEventHandler(OnInputKeyUp);
+      inputBox.KeyPress += new KeyPressEventHandler(OnInputKeyPress);
+      Controls.Add(inputBox);
+
+      graphics.Dispose();
     }
   }
 }
