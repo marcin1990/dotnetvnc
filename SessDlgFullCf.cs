@@ -1,4 +1,4 @@
-//  Copyright (C) 2004-2005 Rocky Lo. All Rights Reserved.
+//  Copyright (C) 2005 Rocky Lo. All Rights Reserved.
 //
 //  This file is part of the VNC system.
 //
