@@ -3,8 +3,8 @@ Introduction
 .NET VNC Viewer is a VNC viewer written entirely in C#. It is binary compatible with Pocket PCs (.NET Compact Framework) and Windows desktops (.NET Framework). I write this mainly because other VNC viewers on Pocket PC do not do full screen and rotation.
 
 In addition, I have the following in my mind when I write .NET VNC Viewer:
--To ensure source and binary compatability on Pocket PCs and Windows desktops.
--To make sure that it can be built freely on Pocket PCs (Pocket C#) and Windows desktops (only .NET Framework SDK 1.1 needed and Visual Studio not required).
+-To ensure source and binary compatibility on Pocket PCs and Windows desktops.
+-To make sure that it can be built freely on Pocket PCs (with Pocket C# at http://mifki.ru/pcsharp/) and Windows desktops (only .NET Framework SDK 1.1 needed and Visual Studio not required).
 -To learn C# and .NET (Compact) Framework in its pure form. There are no P/Invoke calls, and it is not linked to any other libraries except the Framework.
 
 Features
@@ -31,7 +31,7 @@ vncviewer.exe [vncxml file]
 
 Support
 =======
-Any comments and questions should be directed to the corresponding forum at http://www.sourceforge.net/projects/dotnetvnc.
+Any comments and questions should be directed to the corresponding forum at http://sourceforge.net/forum/?group_id=128549.
 
 Known Issues
 ============
@@ -65,5 +65,5 @@ References
 The officially VNC site.
 -UltraVNC (http://ultravnc.sourceforge.net)
 This is a variant of VNC on Windows. It supports many features not in the original VNC suite. Most of the code of .NET VNC Viewer is derived from UltraVNC's codebase.
--SourceForge.net (http://www.sourceforge.net)
+-SourceForge (http://sourceforge.net)
 Currently .NET VNC Viewer is hosted on SourceForge. For news and releases of .NET VNC Viewer please visit the project web at http://dotnetvnc.sourceforge.net.
