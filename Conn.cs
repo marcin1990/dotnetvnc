@@ -46,6 +46,15 @@ namespace Vnc.Viewer
   /// </remarks>
   internal class Conn
   {
+    /// <summary>
+    ///   This is the version number we report to the server. At the moment we
+    ///   "borrow" this from the UltraVNC viewer.
+    /// </summary>
+    // TODO: Have we implemented everything needed in order to say that we are
+    // compliant to this version?
+    private const byte ViewerRfbMajorVer = 3;
+    private const byte ViewerRfbMinorVer = 4;
+
     // These are cleaned up upon termination because they contain initial
     // values of a connection object.
     private ConnOpts opts = null;
@@ -96,9 +105,9 @@ namespace Vnc.Viewer
     {
       SessDlg sessDlg;
       if(viewOpts == null)
-        sessDlg = new SessDlg();
+        sessDlg = SessDlgFactory.Create();
       else
-        sessDlg = new SessDlg(viewOpts);
+        sessDlg = SessDlgFactory.Create(viewOpts);
       if(sessDlg.ShowDialog() != DialogResult.OK)
         throw new QuietEx();
       opts = sessDlg.ConnOpts;
@@ -185,8 +194,8 @@ namespace Vnc.Viewer
         throw new WarnEx(App.GetStr("This server version is not supported!"));
       else
       {
-        majorVer = App.ViewerRfbMajorVer;
-        minorVer = App.ViewerRfbMinorVer;
+        majorVer = ViewerRfbMajorVer;
+        minorVer = ViewerRfbMinorVer;
       }
 
       verMsg = RfbProtoUtil.GetVerMsg(majorVer, minorVer);

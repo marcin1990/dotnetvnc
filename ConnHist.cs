@@ -31,6 +31,7 @@ namespace Vnc.Viewer
   /// <remarks>This class is responsible for saving and loading the connection history.</remarks>
   internal class ConnHist
   {
+    private const byte MaxConnHist = 10;
     private const string HistName = "History";
     private const string EntryName = "Entry";
 
@@ -88,7 +89,7 @@ namespace Vnc.Viewer
       }
 
       XmlNodeList list = doc.GetElementsByTagName(EntryName);
-      for(int i = 0; i < Math.Min(App.MaxConnHist, list.Count); i++)
+      for(int i = 0; i < Math.Min(MaxConnHist, list.Count); i++)
         connHist.Add(list[i].InnerText);
     }
 
@@ -98,7 +99,7 @@ namespace Vnc.Viewer
       if(connHist.Contains(entry))
         connHist.Remove(entry);
       // Insert only if the maximum has not reached.
-      if(connHist.Count < App.MaxConnHist)
+      if(connHist.Count < MaxConnHist)
         connHist.Insert(0, entry);
     }
   }

@@ -21,12 +21,46 @@
 // whence you received this file, check http://www.uk.research.att.com/vnc or contact
 // the authors on vnc@uk.research.att.com for information on obtaining it.
 
-using System.Reflection;
+namespace Vnc.Viewer
+{
+  internal class SessDlgPpc : SessDlgDt
+  {
+    internal SessDlgPpc() : base()
+    {
+      AdjustSizes();
+    }
 
-[assembly:AssemblyInformationalVersion("1.0.1.0")]
-[assembly:AssemblyVersion("1.0.1.0")]
-[assembly:AssemblyDescription("VNC Viewer on .NET Framework")]
-[assembly:AssemblyCompany("Rocky Lo")]
-[assembly:AssemblyTitle(".NET VNC Viewer")]
-[assembly:AssemblyCopyright("Copyright (C) 2004-2005 Rocky Lo. Copyright (C) 2002 Ultr@VNC Team Members. Copyright (C) 2000-2002 Const Kaplinsky. Copyright (C) 2002 RealVNC Ltd. Copyright (C) 1999 AT&T Laboratories Cambridge.")]
-[assembly:AssemblyProduct(".NET VNC Viewer")]
+    internal SessDlgPpc(ViewOpts viewOpts) : base(viewOpts)
+    {
+      AdjustSizes();
+    }
+
+    private void AdjustSizes()
+    {
+      if(App.DevCap.Res <= ResLvl.Normal)
+        return;
+
+      remoteEndPt.Height *= 2;
+      passwdBox.Height *= 2;
+      fullScrnBox.Height *= 2;
+      viewOnlyBox.Height *= 2;
+      shareServBox.Height *= 2;
+      okBtn.Height *= 2;
+      okBtn.Width *= 2;
+      cancelBtn.Height *= 2;
+      cancelBtn.Width *= 2;
+      aboutBtn.Height *= 2;
+      aboutBtn.Width *= 2;
+      saveConnOptsBtn.Height *= 2;
+      saveConnOptsBtn.Width *= 2;
+      saveConnOptsPwdBtn.Height *= 2;
+      saveConnOptsPwdBtn.Width *= 2;
+      loadConnOptsBtn.Height *= 2;
+      loadConnOptsBtn.Width *= 2;
+      saveDefsBtn.Height *= 2;
+      saveDefsBtn.Width *= 2;
+      restoreDefsBtn.Height *= 2;
+      restoreDefsBtn.Width *= 2;
+    }
+  }
+}

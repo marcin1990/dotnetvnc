@@ -41,18 +41,6 @@ namespace Vnc.Viewer
   /// </remarks>
   public class App
   {
-    /// <summary>This is default port to connect to.</summary>
-    internal const UInt16 VncPort = 5900;
-
-    /// <summary>
-    ///   This is the version number we report to the server. At the moment we
-    ///   "borrow" this from the UltraVNC viewer.
-    /// </summary>
-    // TODO: Have we implemented everything needed in order to say that we are
-    // compliant to this version?
-    internal const byte ViewerRfbMajorVer = 3;
-    internal const byte ViewerRfbMinorVer = 4;
-
     /// <summary>This is the default spacing between UI elements.</summary>
     internal const byte DialogSpacing = 5;
 
@@ -60,11 +48,8 @@ namespace Vnc.Viewer
     // TODO: Choose an optimal value.
     internal const byte Delta = 10;
 
-    /// <summary>This determines how frequently we update the UI under certain conditions.</summary>
-    internal const byte UiDelta = 50;
-
-    /// <summary>This is the maximum number of entries we store.
-    internal const byte MaxConnHist = 10;
+    /// <summary>DevCap automatically detects device capabilities.</summary>
+    internal static readonly DevCap DevCap = new DevCap();
 
     /// <summary>In .NET CF we don't have the system defined colors.</summary>
     internal static readonly Color Black = Color.FromArgb(0, 0, 0);
@@ -125,8 +110,8 @@ namespace Vnc.Viewer
     internal static void AboutBox()
     {
       MessageBox.Show(App.GetStr(@"
-.NET VNC Viewer 1.0.0.0
-Jan 11, 2005
+.NET VNC Viewer 1.0.1.0
+Feb 13, 2005
 
 Copyright (C) 2004-2005 Rocky Lo. All Rights Reserved.
 Copyright (C) 2002 Ultr@VNC Team Members. All Rights Reserved.
@@ -243,12 +228,19 @@ Copyright (C) 1999 AT&T Laboratories Cambridge. All Rights Reserved.
         NewConn(vncFileName);
       else
       {
-        // This is a hack. If we don't have at least one window visible, new windows
-        // wil be created in the background on Pocket PC.
-        Form dummy = new DummyForm();
-        dummy.Show();
-        NewConn();
-        dummy.Close(); // By now a View should have been created so we can close the dummy.
+        if(DevCap.Lvl >= DevCapLvl.Desktop)
+          NewConn();
+        else
+        {
+          // This is a hack. If we don't have at least one window visible,
+          // new windows wil be created in the background on Pocket PC.
+          Form dummy = new DummyForm();
+          dummy.Show();
+          NewConn();
+
+          // By now a View should have been created so we can close the dummy.
+          dummy.Close();
+        }
       }
 
       while(connList.Count > 0)

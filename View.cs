@@ -37,6 +37,7 @@ namespace Vnc.Viewer
   /// </remars>
   internal class View : Form
   {
+    private const byte Delta = 50;
     private const byte TapHoldRadius = 2;
     private const byte NumTapHoldCircles = 8;
     private const byte BigCircleRadius = 15;
@@ -1346,7 +1347,7 @@ namespace Vnc.Viewer
       frameBufGraphics = Graphics.FromImage(frameBuf);
 
       timer.Tick += new EventHandler(Ticked);
-      timer.Interval = App.UiDelta;
+      timer.Interval = Delta;
 
       EventHandler scrlHdr = new EventHandler(Scrled);
       hScrlBar.ValueChanged += scrlHdr;

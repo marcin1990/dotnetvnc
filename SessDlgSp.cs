@@ -21,12 +21,20 @@
 // whence you received this file, check http://www.uk.research.att.com/vnc or contact
 // the authors on vnc@uk.research.att.com for information on obtaining it.
 
-using System.Reflection;
+namespace Vnc.Viewer
+{
+  internal class SessDlgSp : SessDlg
+  {
+    internal SessDlgSp() : base()
+    {}
 
-[assembly:AssemblyInformationalVersion("1.0.1.0")]
-[assembly:AssemblyVersion("1.0.1.0")]
-[assembly:AssemblyDescription("VNC Viewer on .NET Framework")]
-[assembly:AssemblyCompany("Rocky Lo")]
-[assembly:AssemblyTitle(".NET VNC Viewer")]
-[assembly:AssemblyCopyright("Copyright (C) 2004-2005 Rocky Lo. Copyright (C) 2002 Ultr@VNC Team Members. Copyright (C) 2000-2002 Const Kaplinsky. Copyright (C) 2002 RealVNC Ltd. Copyright (C) 1999 AT&T Laboratories Cambridge.")]
-[assembly:AssemblyProduct(".NET VNC Viewer")]
+    internal SessDlgSp(ViewOpts viewOpts) : base(viewOpts)
+    {}
+
+    protected override void Ok()
+    {}
+
+    protected override void AddConnHistEntry(string entry)
+    {}
+  }
+}
