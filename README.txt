@@ -12,6 +12,7 @@ Features
 -Of course, basic VNC viewer functionalities.
 -Full screen mode.
 -Screen rotation.
+-Client-side scaling.
 -Session history.
 -Hi-Res support for VGA Pocket PC and QVGA Smartphones.
 -etc.
@@ -61,6 +62,15 @@ Comments on C# and .NET (Compact) Framework
 
 History
 =======
+1.0.1.10 (Mar 22, 2005)
+-Client-side scaling implemented.
+-Fixed a problem with Smartphone key input mode which prevents the viewer from going back to mouse mode after exiting extended input mode.
+-For Smartphones, the back soft key is now backspace even not in key input mode.
+-Improved the code for painting.
+-Made adjustments to thread priority to provide a more responsive UI.
+-Added "Shift Down" and "Shift Up" to the "Keys" menu.
+-For Smartphones, added an option to send the mouse location to the server when the cursor is idle.
+-Fixed a bug on Smartphones that would cause the right mouse button to not properly function after exiting full screen mode.
 1.0.1 (Feb 27, 2005)
 -Smartphone support.
 -Hi-Res support for VGA Pocket PCs and QVGA Smartphones.
@@ -75,11 +85,11 @@ History
 
 TODOs
 =====
--Client side scaling.
--Server side scaling.
--ZRLE encoding.
--Dynamic desktop resize.
+-Connection management on Smartphones.
+-Server-side scaling.
+-Status reporting.
 -Single window mode.
+-ZRLE encoding.
 -etc.
 
 References
