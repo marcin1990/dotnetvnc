@@ -95,6 +95,8 @@ namespace Vnc.Viewer
     private Rectangle invalidRect = new Rectangle();
     private Object invalidRectLock = null; // This is the mutex protecting invalidRect.
 
+    private bool toSendUpdReq = false;
+
     // "Real" coordinates => server coordinates.
     // "FrameBuf" coordinates => coordinates of in-memory buffer. This is the same as
     // "Real" coordinates when no rotation is effective.
@@ -272,6 +274,11 @@ namespace Vnc.Viewer
       Monitor.Exit(invalidRectLock);
     }
 
+    internal void SendUpdReq()
+    {
+      toSendUpdReq = true;
+    }
+
     private void BgTicked(object sender, EventArgs e)
     {
       Monitor.Enter(invalidRectLock);
@@ -283,6 +290,19 @@ namespace Vnc.Viewer
       {
         RealToScrnRect(ref rect);
         Invalidate(rect);
+      }
+
+      if(toSendUpdReq)
+      {
+        toSendUpdReq = false;
+        try
+        {
+          conn.SendUpdReq(true);
+        }
+        catch(IOException)
+        {
+          Close();
+        }
       }
     }
 
@@ -600,7 +620,14 @@ namespace Vnc.Viewer
       frameBufWidth = newFrameBufWidth;
       frameBufHeight = newFrameBufHeight;
       UnlockFrameBuf();
-      conn.ScrnRefresh(); // It is possible to NOT send this update. See the comment above regarding transforming pixel data.
+      try
+      {
+        conn.SendUpdReq(false); // It is possible to NOT send this update. See the comment above regarding transforming pixel data.
+      }
+      catch(IOException)
+      {
+        Close();
+      }
 
       ResizeCore();
       HScrlBarVal = newHScrlBarVal;
@@ -1107,7 +1134,14 @@ namespace Vnc.Viewer
 
     private void RefreshClicked(object sender, EventArgs e)
     {
-      conn.ScrnRefresh();
+      try
+      {
+        conn.SendUpdReq(false);
+      }
+      catch(IOException)
+      {
+        Close();
+      }
     }
 
     private void PixelSizeClicked(object sender, EventArgs e)

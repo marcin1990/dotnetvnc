@@ -87,14 +87,6 @@ namespace Vnc.Viewer
     private byte blueShift = 0;
     internal bool IsFmtChgPending = false;
 
-    // Once constructed this does not change.
-    private EventHandler scrnUpdHdr = null;
-
-    internal Conn()
-    {
-      scrnUpdHdr = new EventHandler(ScrnUpd);
-    }
-
     private void ViewClosed(object sender, EventArgs e)
     {
       termBgThread = true;
@@ -602,21 +594,16 @@ namespace Vnc.Viewer
       }
     }
 
-    private void ScrnUpd(object sender, EventArgs e)
+    internal void SendUpdReq(bool incremental)
     {
       if(IsFmtChgPending)
       {
-        SetPixelFormat();
-        ScrnRefresh();
         IsFmtChgPending = false;
+        SetPixelFormat();
+        SendUpdReq(0, 0, servInit.Width, servInit.Height, false);
       }
       else
-        SendUpdReq(0, 0, servInit.Width, servInit.Height, true);
-    }
-
-    internal void ScrnRefresh()
-    {
-      SendUpdReq(0, 0, servInit.Width, servInit.Height, false);
+        SendUpdReq(0, 0, servInit.Width, servInit.Height, incremental);
     }
 
     private void ReadScrnUpd()
@@ -656,12 +643,8 @@ namespace Vnc.Viewer
         }
       }
 
-      // TODO: Any problem with having this called sync'ly?
-      // Checking whether the view has closed before calling Invoke.
-      // This is a workaround for a bug in .NET CF prior to SP3.
-      // The bug causes an application to hang if Invoke is called on a disposed object.
-      if(!termBgThread)
-        view.Invoke(scrnUpdHdr);
+      // Do this in the UI thread so we always send data in one thread.
+      view.SendUpdReq();
     }
 
     private void ReadServCutTxt()
@@ -711,6 +694,16 @@ namespace Vnc.Viewer
               throw new WarnEx(App.GetStr("The server is sending unknown message!"));
           }
         }
+      }
+      catch(SocketException)
+      {
+        MessageBox.Show(App.GetStr("Unable to communicate with the server!"),
+                        App.GetStr("Error"),
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Exclamation,
+                        MessageBoxDefaultButton.Button1);
+        // TODO: Is it safe to call close from this thread?
+        view.Close();
       }
       catch(IOException)
       {
