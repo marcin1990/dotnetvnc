@@ -62,6 +62,7 @@ namespace Vnc.Viewer
 
     private void CursorTicked(object sender, EventArgs e)
     {
+      // This is what we call friction.
       if(xSpeed > 0)
         xSpeed--;
       else if(xSpeed < 0)
@@ -155,6 +156,9 @@ namespace Vnc.Viewer
 
     private void InputTicked(object sender, EventArgs e)
     {
+      // We have to set Enabled to false before hiding inputBox.
+      // Otherwise the input mode will not be set correctly after exiting extended input mode.
+      inputBox.Enabled = false;
       inputBox.Visible = false;
       inputTimer.Enabled = false;
       Focus();
@@ -213,6 +217,7 @@ namespace Vnc.Viewer
               break;
           }
           inputBox.Visible = true;
+          inputBox.Enabled = true;
           inputBox.Focus();
           break;
       }
@@ -253,7 +258,8 @@ namespace Vnc.Viewer
       if(e.Handled)
         return;
 
-      ResetInputTimer();
+      // We don't enable the inputTimer until we get a KeyPress or KeyUp.
+      inputTimer.Enabled = false;
       OnKeyEvent(e.KeyCode, true);
     }
 
@@ -334,6 +340,7 @@ namespace Vnc.Viewer
 
       inputTimer.Tick += new EventHandler(InputTicked);
       inputTimer.Interval = InputDelta;
+      inputBox.Enabled = false;
       inputBox.Visible = false;
       inputBox.MaxLength = 1;
       inputBox.Size = graphics.MeasureString("M", Font).ToSize(); // M should be the widest character
