@@ -1,0 +1,6 @@
+-Client side scaling.
+-Server side scaling.
+-ZRLE encoding.
+-Dynamic desktop resize.
+-Single window mode.
+-etc.

@@ -1,0 +1,39 @@
+On a Pocket PC
+==============
+1) Install Pocket C#.
+2) Put all source files in \pc#\proj\vncviewer.
+3) Tap on either vncviewer.debug.csant (debug build) or vncviewer.release.csant (release build).
+4) The build process should complete in one to two minutes.
+
+On a Windows desktop
+====================
+1) Install .NET Framework SDK 1.1.
+2) Execute C:\Program Files\Microsoft.NET\SDK\v1.1\Bin\sdkvars.bat. Replace the path with whatever appropriate.
+3) Put all source files in a directory.
+4) Open a command prompt.
+5) CD to where you put the source files.
+6) Execute csc /target:winexe /out:vncviewer.exe *.cs
+7) The build process should complete in seconds.
+
+On a Windows desktop (exe runs on both desktop and PPC)
+=======================================================
+If binary compatibility (i.e., the same exe runs on both desktop and PPC) is desired when building on desktop, follow the following steps:
+1) Install .NET Framework SDK 1.1.
+2) Copy the .NET Compact Framework DLLs to a directory on the desktop. You can obtain the DLLs from various sources. For example, you can copy the DLLs from a Pocket C# distribution or an installed .NET Compact Framework SDK. These files are:
+	Microsoft.WindowsCE.Forms.dll
+	mscorlib.dll
+	System.Data.dll
+	System.dll
+	System.Drawing.dll
+	System.Net.IrDA.dll
+	System.Web.Services.dll
+	System.Windows.Forms.DataGrid.dll
+	System.Windows.Forms.dll
+	System.Xml.dll
+3) Execute C:\Program Files\Microsoft.NET\SDK\v1.1\Bin\sdkvars.bat. Replace the path with whatever appropriate.
+4) Put all source files in a directory.
+5) Open a command prompt.
+6) CD to where you put the source files.
+7) Execute the following line, replacing the path of the various DLLs accordingly:
+	csc /target:winexe /out:vncviewer.exe /nostdlib /noconfig /reference:\pc#\netcf\System.dll;\pc#\netcf\mscorlib.dll;\pc#\netcf\System.Xml.dll;\pc#\netcf\System.Drawing.dll;\pc#\netcf\System.Windows.Forms.dll *.cs
+8) The build process should complete in seconds.

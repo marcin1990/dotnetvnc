@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<project name="vncviewer" default="all">
+  <property name="out" value="/pc#/proj/vncviewer/vncviewer.exe"/>
+  <target name="all">
+    <compile output="${out}" target="winexe" debug="false" checked="false" optimize="true" nostdlib="true">
+      <arg value="-winforms"/>
+      <sources basedir="/pc#/proj/vncviewer">
+        <includes name="*.cs"/>
+      </sources>
+      <references basedir="/pc#/netcf">
+        <file name="mscorlib.dll"/>
+        <file name="System.dll"/>
+        <file name="System.Xml.dll"/>
+        <file name="System.Drawing.dll"/>
+        <file name="System.Windows.Forms.dll"/>
+      </references>
+    </compile>
+  </target>
+  <target name="clean">
+    <delete file="${out}"/>
+  </target>
+</project>

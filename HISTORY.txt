@@ -1,0 +1,5 @@
+Changes to .NET VNC Viewer
+==========================
+
+1.0.0.0
+-Initial release.
