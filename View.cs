@@ -169,41 +169,15 @@ namespace Vnc.Viewer
 
     private void FrameBufToScrnXY(ref int x, ref int y)
     {
+      // Scrolling
       if(hScrlBar.Visible)
-        x -= hScrlBar.Value; // Scrolling
-      else
-      {
-        // Border
-        if(vScrlBar.Visible)
-          x += (ClientRectangle.Width - frameBufWidth - vScrlBar.Width) / 2;
-        else
-          x += (ClientRectangle.Width - frameBufWidth) / 2;
-      }
+        x -= hScrlBar.Value;
       if(vScrlBar.Visible)
-        y -= vScrlBar.Value; // Scrolling
-      else
-      {
-        // Border
-        if(hScrlBar.Visible)
-          y += (ClientRectangle.Height - frameBufHeight - hScrlBar.Height) / 2;
-        else
-          y += (ClientRectangle.Height - frameBufHeight) / 2;
-      }
+        y -= vScrlBar.Value;
 
-      // Scrollbar offsets
-      switch(connOpts.ViewOpts.Orientation)
-      {
-        case Orientation.Landscape90:
-          y += hScrlBar.Visible? hScrlBar.Height : 0;
-          break;
-        case Orientation.Portrait180:
-          x += vScrlBar.Visible? vScrlBar.Width : 0;
-          y += hScrlBar.Visible? hScrlBar.Height : 0;
-          break;
-        case Orientation.Landscape270:
-          x += vScrlBar.Visible? vScrlBar.Width : 0;
-          break;
-      }
+      Rectangle viewable = ViewableRect;
+      x += viewable.X;
+      y += viewable.Y;
     }
 
     private void FrameBufToRealXY(ref UInt16 x, ref UInt16 y)
@@ -228,36 +202,16 @@ namespace Vnc.Viewer
 
     private void ScrnToFrameBufXY(ref int x, ref int y)
     {
+      // Scrolling
       if(hScrlBar.Visible)
-      {
-        x += hScrlBar.Value; // Scrolling
-        if(connOpts.ViewOpts.Orientation == Orientation.Landscape90 ||
-           connOpts.ViewOpts.Orientation == Orientation.Portrait180)
-          y -= hScrlBar.Height; // Scrollbar offset
-      }
-      else
-      {
-        // Border
-        if(vScrlBar.Visible)
-          x -= (ClientRectangle.Width - frameBufWidth - vScrlBar.Width) / 2;
-        else
-          x -= (ClientRectangle.Width - frameBufWidth) / 2;
-      }
+        x += hScrlBar.Value;
       if(vScrlBar.Visible)
-      {
-        y += vScrlBar.Value; // Scrolling
-        if(connOpts.ViewOpts.Orientation == Orientation.Portrait180 ||
-           connOpts.ViewOpts.Orientation == Orientation.Landscape270)
-          x -= vScrlBar.Width; // Scrollbar offset
-      }
-      else
-      {
-        // Border
-        if(hScrlBar.Visible)
-          y -= (ClientRectangle.Height - frameBufHeight - hScrlBar.Height) / 2;
-        else
-          y -= (ClientRectangle.Height - frameBufHeight) / 2;
-      }
+        y += vScrlBar.Value;
+
+      Rectangle viewable = ViewableRect;
+      x -= viewable.X;
+      y -= viewable.Y;
+
       x = Math.Max(x, 0);
       x = Math.Min(x, frameBufWidth - 1);
       y = Math.Max(y, 0);
@@ -707,53 +661,92 @@ namespace Vnc.Viewer
       Controls.Add(vScrlBar);
     }
 
+    protected Rectangle UsableRect
+    {
+      get
+      {
+        Rectangle rect = new Rectangle();
+        if(hScrlBar.Visible)
+        {
+          rect.Height = ClientRectangle.Height - hScrlBar.Height;
+          if(hScrlBar.Top <= 0) // At the top
+            rect.Y = hScrlBar.Height;
+          else
+            rect.Y = 0;
+        }
+        else
+        {
+          rect.Height = ClientRectangle.Height;
+          rect.Y = 0;
+        }
+        if(vScrlBar.Visible)
+        {
+          rect.Width = ClientRectangle.Width - vScrlBar.Width;
+          if(vScrlBar.Left <= 0) // At the left edge
+            rect.X = vScrlBar.Width;
+          else
+            rect.X = 0;
+        }
+        else
+        {
+          rect.Width = ClientRectangle.Width;
+          rect.X = 0;
+        }
+        return rect;
+      }
+    }
+
+    protected Rectangle ViewableRect
+    {
+      get
+      {
+        Rectangle usable = UsableRect;
+        Rectangle rect = new Rectangle();
+        if(hScrlBar.Visible)
+        {
+          rect.X = usable.X;
+          rect.Width = usable.Width;
+        }
+        else
+        {
+          rect.X = usable.X + (usable.Width - frameBufWidth) / 2;
+          rect.Width = frameBufWidth;
+        }
+        if(vScrlBar.Visible)
+        {
+          rect.Y = usable.Y;
+          rect.Height = usable.Height;
+        }
+        else
+        {
+          rect.Y = usable.Y + (usable.Height - frameBufHeight) / 2;
+          rect.Height = frameBufHeight;
+        }
+        return rect;
+      }
+    }
+
     protected override void OnPaint(PaintEventArgs e)
     {
       base.OnPaint(e);
 
       Graphics graphics = e.Graphics;
 
-      // graphics.Clip does not work for some strange reasons...
-
-      Rectangle viewRect = new Rectangle();
-      if(hScrlBar.Visible)
-      {
-        viewRect.Height = ClientRectangle.Height - hScrlBar.Height;
-        if(hScrlBar.Top <= 0) // At the top
-          viewRect.Y = hScrlBar.Height;
-        else
-          viewRect.Y = 0;
-      }
-      else
-      {
-        viewRect.Height = ClientRectangle.Height;
-        viewRect.Y = 0;
-      }
-      if(vScrlBar.Visible)
-      {
-        viewRect.Width = ClientRectangle.Width - vScrlBar.Width;
-        if(vScrlBar.Left <= 0) // At the left edge
-          viewRect.X = vScrlBar.Width;
-        else
-          viewRect.X = 0;
-      }
-      else
-      {
-        viewRect.Width = ClientRectangle.Width;
-        viewRect.X = 0;
-      }
+      Rectangle usable = UsableRect;
 
       int x = 0;
       int y = 0;
       FrameBufToScrnXY(ref x, ref y);
+
       Rectangle destRect = new Rectangle(x, y, frameBufWidth, frameBufHeight);
-      destRect.Intersect(viewRect);
+      destRect.Intersect(usable);
       Rectangle srcRect = new Rectangle(destRect.X - x, destRect.Y - y, destRect.Width, destRect.Height);
+
       LockFrameBuf();
       graphics.DrawImage(frameBuf, destRect.X, destRect.Y, srcRect, GraphicsUnit.Pixel);
       UnlockFrameBuf();
 
-      Region border = new Region(viewRect);
+      Region border = new Region(usable);
       border.Exclude(destRect);
       graphics.FillRegion(BlackBrush, border);
 

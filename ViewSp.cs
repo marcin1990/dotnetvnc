@@ -71,65 +71,36 @@ namespace Vnc.Viewer
         ySpeed--;
       else if(ySpeed < 0)
         ySpeed++;
+      if(xSpeed == 0 && ySpeed == 0)
+        return;
 
-      int minMouseX;
-      int maxMouseX;
-      int minMouseY;
-      int maxMouseY;
-      if(hScrlBar.Visible)
-      {
-        if(hScrlBar.Top <= 0) // At the top
-        {
-          minMouseY = hScrlBar.Height;
-          maxMouseY = ClientRectangle.Height - 1;
-        }
-        else
-        {
-          minMouseY = 0;
-          maxMouseY = ClientRectangle.Height - hScrlBar.Height - 1;
-        }
-      }
-      else
-      {
-        minMouseY = 0;
-        maxMouseY = ClientRectangle.Height - 1;
-      }
-      if(vScrlBar.Visible)
-      {
-        if(vScrlBar.Left <= 0) // At the left
-        {
-          minMouseX = vScrlBar.Width;
-          maxMouseX = ClientRectangle.Width - 1;
-        }
-        else
-        {
-          minMouseX = 0;
-          maxMouseX = ClientRectangle.Width - vScrlBar.Width - 1;
-        }
-      }
-      else
-      {
-        minMouseX = 0;
-        maxMouseX = ClientRectangle.Width - 1;
-      }
+      Rectangle usable = UsableRect;
 
       mouseX += xSpeed;
       int tempX = mouseX;
-      mouseX = Math.Max(Math.Min(mouseX, maxMouseX), minMouseX);
+      mouseX = Math.Max(Math.Min(mouseX, usable.Right - 1), usable.Left);
       tempX -= mouseX;
       mouseY += ySpeed;
       int tempY = mouseY;
-      mouseY = Math.Max(Math.Min(mouseY, maxMouseY), minMouseY);
+      mouseY = Math.Max(Math.Min(mouseY, usable.Bottom - 1), usable.Top);
       tempY -= mouseY;
 
-      if(xSpeed != 0 || ySpeed != 0)
+      if(hScrlBar.Visible && tempX != 0)
       {
-        if(hScrlBar.Visible && tempX != 0)
+        if((hScrlBar.Value <= 0 && tempX <= 0) || (hScrlBar.Value >= hScrlBar.Maximum + 1 - hScrlBar.LargeChange && tempX >= 0))
+          xSpeed = 0;
+        else
           hScrlBar.Value = Math.Max(0, Math.Min(hScrlBar.Value + tempX, hScrlBar.Maximum + 1 - hScrlBar.LargeChange));
-        if(vScrlBar.Visible && tempY != 0)
-          vScrlBar.Value = Math.Max(0, Math.Min(vScrlBar.Value + tempY, vScrlBar.Maximum + 1 - vScrlBar.LargeChange));
-        Invalidate(); // TODO: Calculate the area to invalidate.
       }
+      if(vScrlBar.Visible && tempY != 0)
+      {
+        if((vScrlBar.Value <= 0 && tempY <= 0) || (vScrlBar.Value >= vScrlBar.Maximum + 1 - vScrlBar.LargeChange && tempY >= 0))
+          ySpeed = 0;
+        else
+          vScrlBar.Value = Math.Max(0, Math.Min(vScrlBar.Value + tempY, vScrlBar.Maximum + 1 - vScrlBar.LargeChange));
+      }
+
+      Invalidate(); // TODO: Calculate the area to invalidate.
     }
 
     protected override void Ticked(object sender, EventArgs e)
