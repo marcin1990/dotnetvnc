@@ -44,7 +44,7 @@ Known Issues
 ============
 -It crashes if executed from a share.
 -It crashes if the remote computer reboots.
--It may not work with UltraVNC 1.0.0 RC 19.5. Please see the tracker item at http://sourceforge.net/tracker/index.php?func=detail&aid=1110877&group_id=128549&atid=712008.
+-It may not work with UltraVNC 1.0.0 RC 19.5. Please see the tracker item at http://sourceforge.net/tracker/index.php?func=detail&aid=1110877&group_id=128549&atid=712008. It works OK with RC 18, however.
 
 Comments on C# and .NET (Compact) Framework
 ===========================================
