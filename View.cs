@@ -255,6 +255,7 @@ namespace Vnc.Viewer
 
     internal void CopyRect(Rectangle rect, UInt16 x, UInt16 y)
     {
+      // TODO: Anything more efficient?
       Rectangle srcRect = new Rectangle(x, y, rect.Width, rect.Height);
       RealToFrameBufRect(ref rect);
       RealToFrameBufRect(ref srcRect);
@@ -484,7 +485,6 @@ namespace Vnc.Viewer
     private void ResizeCore()
     {
       SetupScrlBars();
-      // TODO: calculate the area to be redrawn.
       Invalidate();
 
       // .NET CF does not support MaximumSize...
@@ -521,7 +521,6 @@ namespace Vnc.Viewer
 
     private void Scrled(object sender, EventArgs e)
     {
-      // TODO: Anything smarter?
       Invalidate();
     }
 
@@ -814,6 +813,16 @@ namespace Vnc.Viewer
       }
 
       graphics.Dispose();
+    }
+
+    protected void InvalidateTapHoldCircles()
+    {
+      Rectangle rect = new Rectangle();
+      rect.X = mouseX - BigCircleRadius - 2 * TapHoldCircleRadius;
+      rect.Y = mouseY - BigCircleRadius - 2 * TapHoldCircleRadius;
+      rect.Width = (BigCircleRadius + 2 * TapHoldCircleRadius) * 2;
+      rect.Height = rect.Width;
+      Invalidate(rect);
     }
 
     protected void OnMouseEvent(int x, int y, bool leftBtnDown, bool rightBtnDown)

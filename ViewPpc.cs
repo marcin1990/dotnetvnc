@@ -32,7 +32,7 @@ namespace Vnc.Viewer
     private void SimRightClick()
     {
       timer.Enabled = false;
-      Invalidate(); // TODO: Calculate the area to invalidate.
+      InvalidateTapHoldCircles();
 
       // This stylus tap is for a right mouse click.
       leftBtnDown = false;
@@ -80,35 +80,32 @@ namespace Vnc.Viewer
     {
       base.OnMouseUp(e);
 
-      int mouseX = this.mouseX;
-      int mouseY = this.mouseY;
-      bool leftBtnDown = this.leftBtnDown;
-      this.mouseX = e.X;
-      this.mouseY = e.Y;
-      this.leftBtnDown = false;
-
       if(timer.Enabled)
       {
         timer.Enabled = false;
-        Invalidate(); // TODO: Calculate the area to invalidate.
+        InvalidateTapHoldCircles();
 
         if(connOpts.ViewOpts.IsFullScrn && tapHoldCnt > NumTapHoldCircles)
         {
           // I don't have a clue why I need to lock the frame buffer.
           // But the PPC hangs if I don't do so before showing the context menu.
           LockFrameBuf();
-          ctxMenu.Show(this, new Point(this.mouseX, this.mouseY));
+          ctxMenu.Show(this, new Point(e.X, e.Y));
           UnlockFrameBuf();
         }
         else
         {
           // Send the "delayed" mouse event.
           OnMouseEvent(mouseX, mouseY, leftBtnDown, false);
-          OnMouseEvent(this.mouseX, this.mouseY, this.leftBtnDown, false);
+          OnMouseEvent(e.X, e.Y, false, false);
         }
       }
       else
-        OnMouseEvent(this.mouseX, this.mouseY, this.leftBtnDown, false);
+        OnMouseEvent(e.X, e.Y, false, false);
+
+      mouseX = e.X;
+      mouseY = e.Y;
+      leftBtnDown = false;
     }
 
     protected override void OnMouseDown(MouseEventArgs e)
@@ -134,7 +131,7 @@ namespace Vnc.Viewer
 
         // "Far away" from where the user taps, dismiss tap-and-hold.
         timer.Enabled = false;
-        Invalidate(); // TODO: Calculate the area to invalidate.
+        InvalidateTapHoldCircles();
 
         // Send the "delayed" mouse event.
         OnMouseEvent(mouseX, mouseY, leftBtnDown, false);

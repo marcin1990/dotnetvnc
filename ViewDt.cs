@@ -48,7 +48,7 @@ namespace Vnc.Viewer
       if(tapHoldCnt > NumTapHoldCircles)
       {
         timer.Enabled = false;
-        Invalidate(); // TODO: Calculate the area to invalidate.
+        InvalidateTapHoldCircles();
         ctxMenu.Show(this, new Point(mouseX, mouseY));
       }
       else
@@ -65,7 +65,7 @@ namespace Vnc.Viewer
       if(timer.Enabled)
       {
         timer.Enabled = false;
-        Invalidate(); // TODO: Calculate the area to invalidate.
+        InvalidateTapHoldCircles();
         // Send the "delayed" mouse event.
         OnMouseEvent(mouseX, mouseY, leftBtnDown, rightBtnDown);
       }
@@ -83,7 +83,7 @@ namespace Vnc.Viewer
       if(timer.Enabled)
       {
         timer.Enabled = false;
-        Invalidate(); // TODO: Calculate the area to invalidate.
+        InvalidateTapHoldCircles();
         // Send the "delayed" mouse event.
         OnMouseEvent(mouseX, mouseY, leftBtnDown, rightBtnDown);
       }
@@ -112,7 +112,7 @@ namespace Vnc.Viewer
 
         // "Far away" from where the user taps, dismiss tap-and-hold.
         timer.Enabled = false;
-        Invalidate(); // TODO: Calculate the area to invalidate.
+        InvalidateTapHoldCircles();
 
         // Send the "delayed" mouse event.
         OnMouseEvent(mouseX, mouseY, leftBtnDown, rightBtnDown);

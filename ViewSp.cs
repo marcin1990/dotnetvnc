@@ -54,7 +54,7 @@ namespace Vnc.Viewer
     private void CancelExitFullScrn()
     {
       timer.Enabled = false;
-      Invalidate(); // TODO: Calculate the area to invalidate.
+      InvalidateTapHoldCircles();
       // Send the "delayed" mouse event.
       OnMouseEvent(mouseX, mouseY, leftBtnDown, rightBtnDown);
     }
@@ -84,22 +84,36 @@ namespace Vnc.Viewer
       mouseY = Math.Max(Math.Min(mouseY, usable.Bottom - 1), usable.Top);
       tempY -= mouseY;
 
-      if(hScrlBar.Visible && tempX != 0)
+      if(tempX == 0 && tempY == 0)
       {
-        if((hScrlBar.Value <= 0 && tempX <= 0) || (hScrlBar.Value >= hScrlBar.Maximum + 1 - hScrlBar.LargeChange && tempX >= 0))
-          xSpeed = 0;
-        else
-          hScrlBar.Value = Math.Max(0, Math.Min(hScrlBar.Value + tempX, hScrlBar.Maximum + 1 - hScrlBar.LargeChange));
+        // Erase the "old" cross and draw the new one.
+        Rectangle rect = new Rectangle();
+        rect.X = (xSpeed > 0)? mouseX - xSpeed : mouseX;
+        rect.Y = (ySpeed > 0)? mouseY - ySpeed : mouseY;
+        rect.X -= BigCircleRadius / 2;
+        rect.Y -= BigCircleRadius / 2;
+        rect.Width = Math.Abs(xSpeed) + BigCircleRadius;
+        rect.Height = Math.Abs(ySpeed) + BigCircleRadius;
+        Invalidate(rect);
       }
-      if(vScrlBar.Visible && tempY != 0)
+      else
       {
-        if((vScrlBar.Value <= 0 && tempY <= 0) || (vScrlBar.Value >= vScrlBar.Maximum + 1 - vScrlBar.LargeChange && tempY >= 0))
-          ySpeed = 0;
-        else
-          vScrlBar.Value = Math.Max(0, Math.Min(vScrlBar.Value + tempY, vScrlBar.Maximum + 1 - vScrlBar.LargeChange));
+        if(hScrlBar.Visible && tempX != 0)
+        {
+          if((hScrlBar.Value <= 0 && tempX <= 0) || (hScrlBar.Value >= hScrlBar.Maximum + 1 - hScrlBar.LargeChange && tempX >= 0))
+            xSpeed = 0;
+          else
+            hScrlBar.Value = Math.Max(0, Math.Min(hScrlBar.Value + tempX, hScrlBar.Maximum + 1 - hScrlBar.LargeChange));
+        }
+        if(vScrlBar.Visible && tempY != 0)
+        {
+          if((vScrlBar.Value <= 0 && tempY <= 0) || (vScrlBar.Value >= vScrlBar.Maximum + 1 - vScrlBar.LargeChange && tempY >= 0))
+            ySpeed = 0;
+          else
+            vScrlBar.Value = Math.Max(0, Math.Min(vScrlBar.Value + tempY, vScrlBar.Maximum + 1 - vScrlBar.LargeChange));
+        }
+        Invalidate();
       }
-
-      Invalidate(); // TODO: Calculate the area to invalidate.
     }
 
     protected override void Ticked(object sender, EventArgs e)
@@ -274,10 +288,18 @@ namespace Vnc.Viewer
     {
       base.OnPaint(e);
 
+      Rectangle rect = new Rectangle();
+      rect.X = mouseX - BigCircleRadius / 2;
+      rect.Y = mouseY - BigCircleRadius / 2;
+      rect.Width = BigCircleRadius - 1;
+      rect.Height = BigCircleRadius - 1;
+      if(!e.ClipRectangle.IntersectsWith(rect))
+        return;
+
       Graphics graphics = e.Graphics;
       viewPen.Color = App.Red;
-      graphics.DrawLine(viewPen, mouseX - BigCircleRadius / 2, mouseY, mouseX + BigCircleRadius / 2, mouseY);
-      graphics.DrawLine(viewPen, mouseX, mouseY - BigCircleRadius / 2, mouseX, mouseY + BigCircleRadius / 2);
+      graphics.DrawLine(viewPen, rect.Left, mouseY, rect.Right , mouseY);
+      graphics.DrawLine(viewPen, mouseX, rect.Top, mouseX, rect.Bottom);
     }
 
     protected override void OnClosed(EventArgs e)
