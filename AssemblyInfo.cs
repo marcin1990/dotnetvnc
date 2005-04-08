@@ -23,8 +23,8 @@
 
 using System.Reflection;
 
-[assembly:AssemblyInformationalVersion("1.0.1.12")]
-[assembly:AssemblyVersion("1.0.1.12")]
+[assembly:AssemblyInformationalVersion("1.0.1.13")]
+[assembly:AssemblyVersion("1.0.1.13")]
 [assembly:AssemblyDescription("VNC Viewer on .NET Framework")]
 [assembly:AssemblyCompany("Rocky Lo")]
 [assembly:AssemblyTitle(".NET VNC Viewer")]

@@ -37,6 +37,7 @@ using System.Windows.Forms;
 using System.Collections;
 using Vnc.RfbProto;
 using Vnc.Security;
+using SystemEx.WindowCE.Net;
 
 namespace Vnc.Viewer
 {
@@ -56,15 +57,10 @@ namespace Vnc.Viewer
     private const byte ViewerRfbMajorVer = 3;
     private const byte ViewerRfbMinorVer = 4;
 
-    private static MethodInfo estConnInfo = null;
-    private static MethodInfo relConnInfo = null;
-
     // These are cleaned up upon termination because they contain initial
     // values of a connection object.
     private ConnOpts opts = null;
     private ViewOpts viewOpts = null;
-
-    private Int32 hConn = 0;
 
     // These are cleaned up upon termination because they contain
     // unmanaged resources.
@@ -72,6 +68,7 @@ namespace Vnc.Viewer
     private NetworkStream stream = null;
     private BinaryReader reader = null;
     private BinaryWriter writer = null;
+    private NetworkConn networkConn = null;
 
     // These are set each time a connection is run.
     private ServInit servInit = null;
@@ -357,46 +354,26 @@ namespace Vnc.Viewer
       WriteBytes(msg);
     }
 
-    private void EstConn()
+    private void EstNetworkConn()
     {
       // We use the connection manager on PPCs and Smartphones.
       if(App.DevCap.Lvl >= DevCapLvl.Desktop)
         return;
 
-      try
-      {
-        if(estConnInfo == null)
-        {
-          Type webReqType = WebRequest.Create("http://localhost/").GetType();
-          Type connMgrType = webReqType.Assembly.GetType("System.Net.ConnMgr");
-          estConnInfo = connMgrType.GetMethod("EstablishConnectionForUrl", BindingFlags.InvokeMethod | BindingFlags.Public | BindingFlags.Static);
-          relConnInfo = connMgrType.GetMethod("ReleaseConnection", BindingFlags.InvokeMethod | BindingFlags.Public | BindingFlags.Static);
-        }
-        Int32 ec = 0;
-        Object[] parameters = new Object[] {"http://" + opts.Host + "/", ec};
-        hConn = (Int32)estConnInfo.Invoke(null, parameters);
-      }
-      catch(Exception)
-      {
-        // Eat all exceptions.
-      }
+      networkConn = new NetworkConn("http://" + opts.Host + "/");
+      networkConn.Est();
     }
 
-    private void RelConn()
+    private void RelNetworkConn()
     {
       // We use the connection manager on PPCs and Smartphones.
       if(App.DevCap.Lvl >= DevCapLvl.Desktop)
         return;
 
-      try
+      if(networkConn != null)
       {
-        if(hConn == 0)
-          return;
-        relConnInfo.Invoke(null, new Object[] {hConn});
-      }
-      catch(Exception)
-      {
-        // Eat all exceptions.
+        networkConn.Rel();
+        networkConn = null;
       }
     }
 
@@ -424,7 +401,7 @@ namespace Vnc.Viewer
         tcpClient.Close();
         tcpClient = null;
       }
-      RelConn();
+      RelNetworkConn();
       opts = null;
       viewOpts = null;
     }
@@ -449,8 +426,8 @@ namespace Vnc.Viewer
         if(opts == null)
           GetConnDetails();
 
-        // Establish a connection with the connection manager.
-        EstConn();
+        // Establish a network (not VNC) connection with the connection manager.
+        EstNetworkConn();
 
         // Make a connection to the server.
         Connect();
