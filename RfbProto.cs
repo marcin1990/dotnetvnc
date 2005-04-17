@@ -45,6 +45,7 @@ namespace Vnc.RfbProto
     public static readonly UInt16 RreSubRect;
     public static readonly UInt16 CoRreSubRect;
     public static readonly UInt16 HexSubRect;
+    public static readonly UInt16 ResizeFrameBuf;
 
     static RfbSize()
     {
@@ -58,6 +59,7 @@ namespace Vnc.RfbProto
       RreSubRect = 8;
       CoRreSubRect = 4;
       HexSubRect = 2;
+      ResizeFrameBuf = 6;
     }
 
     // This class cannot be instantiated.
@@ -71,7 +73,8 @@ namespace Vnc.RfbProto
     SetEncodings = 2,
     FrameBufUpdReq = 3,
     KeyEvent = 4,
-    PointerEvent = 5
+    PointerEvent = 5,
+    SetScale = 8
   }
 
   public enum RfbServMsgType : byte
@@ -79,7 +82,8 @@ namespace Vnc.RfbProto
     FrameBufUpd = 0,
     SetColorMapEntries = 1,
     Bell = 2,
-    ServCutTxt = 3
+    ServCutTxt = 3,
+    ResizeFrameBuf = 4
   }
 
   public enum RfbAuthScheme : uint
@@ -308,6 +312,34 @@ namespace Vnc.RfbProto
     }
   }
 
+  public class ResizeFrameBufMsg
+  {
+    private readonly Size frameBufSize;
+
+    public UInt16 Width
+    {
+      get
+      {
+        return (UInt16)frameBufSize.Width;
+      }
+    }
+
+    public UInt16 Height
+    {
+      get
+      {
+        return (UInt16)frameBufSize.Height;
+      }
+    }
+
+    public ResizeFrameBufMsg(byte[] msg)
+    {
+      frameBufSize = new Size();
+      frameBufSize.Width = (UInt16)((UInt16)msg[1] << 8 | (UInt16)msg[2]);
+      frameBufSize.Height = (UInt16)((UInt16)msg[3] << 8 | (UInt16)msg[4]);
+    }
+  }
+
   /// <remarks>
   ///   This class contains helper methods.
   ///   This is not strictly OO. However, this is simpler than having a lot of
@@ -449,6 +481,16 @@ namespace Vnc.RfbProto
       msg[5] = (byte)((key & 0x00FF0000) >> 16);
       msg[6] = (byte)((key & 0x0000FF00) >> 8);
       msg[7] = (byte)(key & 0x000000FF);
+      return msg;
+    }
+
+    public static byte[] GetSetScaleMsg(byte scale)
+    {
+      byte[] msg = new byte[4];
+      msg[0] = (byte)RfbCliMsgType.SetScale;
+      msg[1] = scale;
+      msg[2] = 0; // Padding
+      msg[3] = 0; // Padding
       return msg;
     }
 

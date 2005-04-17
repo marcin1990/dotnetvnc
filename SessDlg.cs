@@ -61,6 +61,8 @@ namespace Vnc.Viewer
     protected TextBox cliScalingWidthBox = new TextBox();
     protected Label cliScalingHeightLbl = new Label();
     protected TextBox cliScalingHeightBox = new TextBox();
+    protected Label servScalingLbl = new Label();
+    protected ComboBox servScalingBox = new ComboBox();
 
     protected CheckBox viewOnlyBox = new CheckBox();
     protected CheckBox shareServBox = new CheckBox();
@@ -318,6 +320,7 @@ namespace Vnc.Viewer
           viewOpts.CliScalingHeight = UInt16.Parse(cliScalingHeightBox.Text);
           break;
       }
+      viewOpts.ServScaling = (ServScaling)servScalingBox.SelectedIndex;
       viewOpts.ViewOnly = viewOnlyBox.Checked;
       viewOpts.ShareServ = !shareServBox.Checked;
       viewOpts.ScrnUpdAlgo = scrnUpdAlgoBox.Checked? ScrnUpdAlgo.Asap : ScrnUpdAlgo.Batch;
@@ -385,6 +388,7 @@ namespace Vnc.Viewer
           cliScalingHeightBox.Text = viewOpts.CliScalingHeight.ToString();
           break;
       }
+      servScalingBox.SelectedIndex = (int)viewOpts.ServScaling;
       viewOnlyBox.Checked = viewOpts.ViewOnly;
       shareServBox.Checked = !viewOpts.ShareServ;
       scrnUpdAlgoBox.Checked = viewOpts.ScrnUpdAlgo == ScrnUpdAlgo.Asap;
@@ -543,6 +547,18 @@ namespace Vnc.Viewer
       cliScalingBox.SelectedIndexChanged += new EventHandler(CliScalingBoxChanged);
       cliScalingWidthLbl.Text = App.GetStr("Width (pixel):");
       cliScalingHeightLbl.Text = App.GetStr("Height (pixel):");
+      servScalingLbl.Text = App.GetStr("Server-side scaling:");
+      servScalingBox.DropDownStyle = ComboBoxStyle.DropDownList;
+      servScalingBox.Items.Add(App.GetStr("Default"));
+      servScalingBox.Items.Add(App.GetStr("None"));
+      servScalingBox.Items.Add(App.GetStr("1/2"));
+      servScalingBox.Items.Add(App.GetStr("1/3"));
+      servScalingBox.Items.Add(App.GetStr("1/4"));
+      servScalingBox.Items.Add(App.GetStr("1/5"));
+      servScalingBox.Items.Add(App.GetStr("1/6"));
+      servScalingBox.Items.Add(App.GetStr("1/7"));
+      servScalingBox.Items.Add(App.GetStr("1/8"));
+      servScalingBox.Items.Add(App.GetStr("1/9"));
 
       viewOnlyBox.Text = App.GetStr("View only (ignore input)");
       shareServBox.Text = App.GetStr("Disconnect other viewers upon connect");

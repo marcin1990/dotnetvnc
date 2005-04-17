@@ -69,6 +69,7 @@ namespace Vnc.Viewer
     protected MenuItem viewMenu = new MenuItem();
     private MenuItem rotateMenu = new MenuItem();
     private MenuItem cliScalingMenu = new MenuItem();
+    private MenuItem servScalingMenu = new MenuItem();
     private MenuItem pixelSizeMenu = new MenuItem();
     protected MenuItem keysMenu = new MenuItem();
     protected MenuItem optionsMenu = new MenuItem();
@@ -83,6 +84,8 @@ namespace Vnc.Viewer
     private UInt16 scaledFBWidth = 0;
     private UInt16 rawFBHeight = 0;
     private UInt16 scaledFBHeight = 0;
+    private UInt16 newWidth = 0;
+    private UInt16 newHeight = 0;
 
     protected int mouseX = 0;
     protected int mouseY = 0;
@@ -96,8 +99,11 @@ namespace Vnc.Viewer
     protected EventHandler fullScrnHdr = null;
     protected EventHandler rotateHdr = null;
     protected EventHandler cliScalingHdr = null;
+    protected EventHandler servScalingHdr = null;
     protected EventHandler pixelSizeHdr = null;
     protected EventHandler keysHdr = null;
+
+    private EventHandler resizeFrameBufHdr = null;
 
     private System.Windows.Forms.Timer bgTimer = new System.Windows.Forms.Timer();
     private Rectangle invalidRect = new Rectangle();
@@ -336,7 +342,9 @@ namespace Vnc.Viewer
         Invalidate(rect);
       }
 
-      if(toSendUpdReq)
+      // If IsSetScalePending, we don't want to bother the server until it gets
+      // back to us with a resize frame buffer message.
+      if(toSendUpdReq && !conn.IsSetScalePending)
       {
         toSendUpdReq = false;
         try
@@ -348,6 +356,13 @@ namespace Vnc.Viewer
           Close();
         }
       }
+    }
+
+    internal void ResizeFrameBuf(UInt16 width, UInt16 height)
+    {
+      newWidth = width;
+      newHeight = height;
+      Invoke(resizeFrameBufHdr);
     }
 
     internal void LockFrameBuf()
@@ -612,10 +627,6 @@ namespace Vnc.Viewer
       else
         newOrientation = Orientation.Portrait;
 
-      UInt16 newRawFBWidth;
-      UInt16 newScaledFBWidth;
-      UInt16 newRawFBHeight;
-      UInt16 newScaledFBHeight;
       UInt16 newHScrlBarVal;
       UInt16 newVScrlBarVal;
       if(((connOpts.ViewOpts.Orientation == Orientation.Portrait || connOpts.ViewOpts.Orientation == Orientation.Portrait180) &&
@@ -623,75 +634,37 @@ namespace Vnc.Viewer
          ((connOpts.ViewOpts.Orientation == Orientation.Landscape90 || connOpts.ViewOpts.Orientation == Orientation.Landscape270) &&
           (newOrientation == Orientation.Portrait || newOrientation == Orientation.Portrait180)))
       {
-        newRawFBWidth = rawFBHeight;
-        newScaledFBWidth = scaledFBHeight;
-        newRawFBHeight = rawFBWidth;
-        newScaledFBHeight = scaledFBWidth;
         newHScrlBarVal = VScrlBarVal;
         newVScrlBarVal = HScrlBarVal;
       }
       else
       {
-        newRawFBWidth = rawFBWidth;
-        newScaledFBWidth = scaledFBWidth;
-        newRawFBHeight = rawFBHeight;
-        newScaledFBHeight = scaledFBHeight;
         newHScrlBarVal = HScrlBarVal;
         newVScrlBarVal = VScrlBarVal;
       }
-      Bitmap newFrameBuf = new Bitmap(newRawFBWidth, newRawFBHeight);
-      Graphics newFrameBufGraphics = Graphics.FromImage(newFrameBuf);
-
-      // For rotation without sending an update request. See the comment below.
-      /*
-      UInt16 realWidth;
-      UInt16 realHeight;
+      UInt16 newWidth;
+      UInt16 newHeight;
       switch(connOpts.ViewOpts.Orientation)
       {
         case Orientation.Landscape90:
         case Orientation.Landscape270:
-          realWidth = rawFBHeight;
-          realHeight = rawFBWidth;
+          newWidth = rawFBHeight;
+          newHeight = rawFBWidth;
           break;
         default:
-          realWidth = rawFBWidth;
-          realHeight = rawFBHeight;
+          newWidth = rawFBWidth;
+          newHeight = rawFBHeight;
           break;
       }
-      */
 
-      LockFrameBuf();
-      // This "should" be faster when the network is slow because no extra network traffic is needed.
-      // However, this is painfully slow on a PPC... probably due to memory constraint.
-      // So at the moment we just send a full screen update request instead.
-      /*
-      for(UInt16 y = 0; y < realHeight; y++)
-      {
-        for(UInt16 x = 0; x < realWidth; x++)
-        {
-          UInt16 desX = x;
-          UInt16 desY = y;
-          RealToFrameBufXY(ref desX, ref desY, newOrientation, newRawFBWidth, newRawFBHeight);
-          newFrameBuf.SetPixel(desX, desY, this[x, y]);
-        }
-      }
-      */
-      frameBufGraphics.Dispose();
-      frameBuf.Dispose();
-      frameBuf = newFrameBuf;
-      frameBufGraphics = newFrameBufGraphics;
-      connOpts.ViewOpts.Orientation = newOrientation;
-      rawFBWidth = newRawFBWidth;
-      rawFBHeight = newRawFBHeight;
-      UnlockFrameBuf();
-
-      // These values do not affect the other thread and do not need to be in the critical section.
-      scaledFBWidth = newScaledFBWidth;
-      scaledFBHeight = newScaledFBHeight;
+      ResizeFrameBufCore(newOrientation, newWidth, newHeight);
+      SetScaledDims();
 
       try
       {
-        conn.SendUpdReq(false); // It is possible to NOT send this update. See the comment above regarding transforming pixel data.
+        // See the comment regarding IsSetScalePending.
+        if(!conn.IsSetScalePending)
+          conn.SendUpdReq(false);
       }
       catch(IOException)
       {
@@ -699,6 +672,7 @@ namespace Vnc.Viewer
       }
 
       ResizeCore();
+
       HScrlBarVal = newHScrlBarVal;
       VScrlBarVal = newVScrlBarVal;
 
@@ -933,7 +907,8 @@ namespace Vnc.Viewer
 
     protected void OnMouseEvent(int x, int y, bool leftBtnDown, bool rightBtnDown)
     {
-      if(connOpts.ViewOpts.ViewOnly)
+      // See the comment regarding IsSetScalePending.
+      if(connOpts.ViewOpts.ViewOnly || conn.IsSetScalePending)
         return;
 
       ScrnToRealXY(ref x, ref y);
@@ -950,6 +925,10 @@ namespace Vnc.Viewer
 
     protected void OnKeyEvent(UInt32 keyChar, bool isDown)
     {
+      // See the comment regarding IsSetScalePending.
+      if(conn.IsSetScalePending)
+        return;
+
       byte[] msg = RfbProtoUtil.GetKeyEventMsg(isDown, keyChar);
       conn.WriteBytes(msg, RfbCliMsgType.KeyEvent);
     }
@@ -1268,16 +1247,58 @@ namespace Vnc.Viewer
       UInt16 oldVScrlBarVal = VScrlBarVal;
 
       SetScaledDims();
+
       ResizeCore();
+
       HScrlBarVal = (UInt16)(oldHScrlBarVal * scaledFBWidth / oldScaledFBWidth);
       VScrlBarVal = (UInt16)(oldVScrlBarVal * scaledFBHeight / oldScaledFBHeight);
 
       CheckCliScaling();
     }
 
+    private void ServScalingClicked(object sender, EventArgs e)
+    {
+      MenuItem item = (MenuItem)sender;
+      if(item.Text == App.GetStr("None"))
+        connOpts.ViewOpts.ServScaling = ServScaling.None;
+      else if(item.Text == App.GetStr("1/2"))
+        connOpts.ViewOpts.ServScaling = ServScaling.OneHalf;
+      else if(item.Text == App.GetStr("1/3"))
+        connOpts.ViewOpts.ServScaling = ServScaling.OneThird;
+      else if(item.Text == App.GetStr("1/4"))
+        connOpts.ViewOpts.ServScaling = ServScaling.OneFourth;
+      else if(item.Text == App.GetStr("1/5"))
+        connOpts.ViewOpts.ServScaling = ServScaling.OneFifth;
+      else if(item.Text == App.GetStr("1/6"))
+        connOpts.ViewOpts.ServScaling = ServScaling.OneSixth;
+      else if(item.Text == App.GetStr("1/7"))
+        connOpts.ViewOpts.ServScaling = ServScaling.OneSeventh;
+      else if(item.Text == App.GetStr("1/8"))
+        connOpts.ViewOpts.ServScaling = ServScaling.OneEighth;
+      else if(item.Text == App.GetStr("1/9"))
+        connOpts.ViewOpts.ServScaling = ServScaling.OneNinth;
+
+      try
+      {
+        conn.IsSetScalePending = true;
+        conn.SendSetScale((byte)connOpts.ViewOpts.ServScaling);
+      }
+      catch(IOException)
+      {
+        Close();
+      }
+
+      CheckServScaling();
+    }
+
     protected virtual void CheckCliScaling()
     {
       CheckCliScaling(cliScalingMenu);
+    }
+
+    protected virtual void CheckServScaling()
+    {
+      CheckServScaling(servScalingMenu);
     }
 
     protected void CheckCliScaling(Menu menu)
@@ -1348,6 +1369,137 @@ namespace Vnc.Viewer
       }
     }
 
+    protected void CheckServScaling(Menu menu)
+    {
+      MenuItem noneItem = null;
+      MenuItem oneHalfItem = null;
+      MenuItem oneThirdItem = null;
+      MenuItem oneFourthItem = null;
+      MenuItem oneFifthItem = null;
+      MenuItem oneSixthItem = null;
+      MenuItem oneSeventhItem = null;
+      MenuItem oneEighthItem = null;
+      MenuItem oneNinthItem = null;
+      for(int i = 0; i < menu.MenuItems.Count; i++)
+      {
+        MenuItem item = menu.MenuItems[i];
+        if(item.Text == App.GetStr("None"))
+          noneItem = item;
+        else if(item.Text == App.GetStr("1/2"))
+          oneHalfItem = item;
+        else if(item.Text == App.GetStr("1/3"))
+          oneThirdItem = item;
+        else if(item.Text == App.GetStr("1/4"))
+          oneFourthItem = item;
+        else if(item.Text == App.GetStr("1/5"))
+          oneFifthItem = item;
+        else if(item.Text == App.GetStr("1/6"))
+          oneSixthItem = item;
+        else if(item.Text == App.GetStr("1/7"))
+          oneSeventhItem = item;
+        else if(item.Text == App.GetStr("1/8"))
+          oneEighthItem = item;
+        else if(item.Text == App.GetStr("1/9"))
+          oneNinthItem = item;
+      }
+      noneItem.Checked = false;
+      oneHalfItem.Checked = false;
+      oneThirdItem.Checked = false;
+      oneFourthItem.Checked = false;
+      oneFifthItem.Checked = false;
+      oneSixthItem.Checked = false;
+      oneSeventhItem.Checked = false;
+      oneEighthItem.Checked = false;
+      oneNinthItem.Checked = false;
+
+      switch(connOpts.ViewOpts.ServScaling)
+      {
+        case ServScaling.None:
+          noneItem.Checked = true;
+          break;
+        case ServScaling.OneHalf:
+          oneHalfItem.Checked = true;
+          break;
+        case ServScaling.OneThird:
+          oneThirdItem.Checked = true;
+          break;
+        case ServScaling.OneFourth:
+          oneFourthItem.Checked = true;
+          break;
+        case ServScaling.OneFifth:
+          oneFifthItem.Checked = true;
+          break;
+        case ServScaling.OneSixth:
+          oneSixthItem.Checked = true;
+          break;
+        case ServScaling.OneSeventh:
+          oneSeventhItem.Checked = true;
+          break;
+        case ServScaling.OneEighth:
+          oneEighthItem.Checked = true;
+          break;
+        case ServScaling.OneNinth:
+          oneNinthItem.Checked = true;
+          break;
+      }
+    }
+
+    private void ResizeFrameBuf(object sender, EventArgs e)
+    {
+      UInt16 oldScaledFBWidth = scaledFBWidth;
+      UInt16 oldScaledFBHeight = scaledFBHeight;
+      UInt16 oldHScrlBarVal = HScrlBarVal;
+      UInt16 oldVScrlBarVal = VScrlBarVal;
+
+      ResizeFrameBufCore(connOpts.ViewOpts.Orientation, newWidth, newHeight);
+      SetScaledDims();
+
+      try
+      {
+        conn.SendUpdReq(false);
+        conn.IsSetScalePending = false;
+      }
+      catch(IOException)
+      {
+        Close();
+      }
+
+      ResizeCore();
+
+      HScrlBarVal = (UInt16)(oldHScrlBarVal * scaledFBWidth / oldScaledFBWidth);
+      VScrlBarVal = (UInt16)(oldVScrlBarVal * scaledFBHeight / oldScaledFBHeight);
+    }
+
+    private void ResizeFrameBufCore(Orientation orientation, UInt16 width, UInt16 height)
+    {
+      UInt16 newRawFBWidth;
+      UInt16 newRawFBHeight;
+      switch(orientation)
+      {
+        case Orientation.Landscape90:
+        case Orientation.Landscape270:
+          newRawFBWidth = height;
+          newRawFBHeight = width;
+          break;
+        default:
+          newRawFBWidth = width;
+          newRawFBHeight = height;
+          break;
+      }
+      Bitmap newFrameBuf = new Bitmap(newRawFBWidth, newRawFBHeight);
+      Graphics newFrameBufGraphics = Graphics.FromImage(newFrameBuf);
+
+      LockFrameBuf();
+      frameBufGraphics.Dispose();
+      frameBuf.Dispose();
+      frameBuf = newFrameBuf;
+      frameBufGraphics = newFrameBufGraphics;
+      connOpts.ViewOpts.Orientation = orientation;
+      rawFBWidth = newRawFBWidth;
+      rawFBHeight = newRawFBHeight;
+      UnlockFrameBuf();
+    }
+
     private void NewConnClicked(object sender, EventArgs e)
     {
       App.NewConn();
@@ -1379,7 +1531,9 @@ namespace Vnc.Viewer
     {
       try
       {
-        conn.SendUpdReq(false);
+        // See the comment regarding IsSetScalePending.
+        if(!conn.IsSetScalePending)
+          conn.SendUpdReq(false);
       }
       catch(IOException)
       {
@@ -1542,6 +1696,8 @@ namespace Vnc.Viewer
       bgTimer.Interval = BgDelta;
       bgTimer.Enabled = true;
 
+      resizeFrameBufHdr = new EventHandler(ResizeFrameBuf);
+
       timer.Tick += new EventHandler(Ticked);
       timer.Interval = Delta;
 
@@ -1553,6 +1709,7 @@ namespace Vnc.Viewer
       fullScrnHdr = new EventHandler(FullScrnClicked);
       rotateHdr = new EventHandler(RotateClicked);
       cliScalingHdr = new EventHandler(CliScalingClicked);
+      servScalingHdr = new EventHandler(ServScalingClicked);
       pixelSizeHdr = new EventHandler(PixelSizeClicked);
       keysHdr = new EventHandler(KeysClicked);
 
@@ -1624,6 +1781,45 @@ namespace Vnc.Viewer
       item.Click += cliScalingHdr;
       cliScalingMenu.MenuItems.Add(item);
       CheckCliScaling(cliScalingMenu);
+      servScalingMenu.Text = App.GetStr("Server-side scaling");
+      viewMenu.MenuItems.Add(servScalingMenu);
+      item = new MenuItem();
+      item.Text = App.GetStr("None");
+      item.Click += servScalingHdr;
+      servScalingMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("1/2");
+      item.Click += servScalingHdr;
+      servScalingMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("1/3");
+      item.Click += servScalingHdr;
+      servScalingMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("1/4");
+      item.Click += servScalingHdr;
+      servScalingMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("1/5");
+      item.Click += servScalingHdr;
+      servScalingMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("1/6");
+      item.Click += servScalingHdr;
+      servScalingMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("1/7");
+      item.Click += servScalingHdr;
+      servScalingMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("1/8");
+      item.Click += servScalingHdr;
+      servScalingMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("1/9");
+      item.Click += servScalingHdr;
+      servScalingMenu.MenuItems.Add(item);
+      CheckServScaling(servScalingMenu);
       pixelSizeMenu.Text = App.GetStr("Pixel size");
       viewMenu.MenuItems.Add(pixelSizeMenu);
       item = new MenuItem();

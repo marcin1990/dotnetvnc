@@ -88,7 +88,10 @@ namespace Vnc.Viewer
     private byte redShift = 0;
     private byte greenShift = 0;
     private byte blueShift = 0;
+    private UInt16 frameBufWidth = 0;
+    private UInt16 frameBufHeight = 0;
     internal bool IsFmtChgPending = false;
+    internal bool IsSetScalePending = false;
 
     private EventHandler closeHdr = null;
 
@@ -212,7 +215,7 @@ namespace Vnc.Viewer
 
     private void CreateDisp()
     {
-      view = ViewFactory.Create(this, opts, servInit.Width, servInit.Height);
+      view = ViewFactory.Create(this, opts, frameBufWidth, frameBufHeight);
       view.Text = desktopName;
       view.Closed += new EventHandler(ViewClosed);
       view.Show();
@@ -274,6 +277,8 @@ namespace Vnc.Viewer
     {
       byte[] msg = ReadBytes(RfbSize.ServInit);
       servInit = new ServInit(msg);
+      frameBufWidth = servInit.Width;
+      frameBufHeight = servInit.Height;
       desktopName = ReadAsciiStr((int)servInit.NameLen);
     }
 
@@ -451,8 +456,20 @@ namespace Vnc.Viewer
         // Create a display locally.
         CreateDisp();
 
-        // Ask the server to send us the whole desktop.
-        SendUpdReq(0, 0, servInit.Width, servInit.Height, false);
+        // Logically speaking I should send this AFTER sending a refresh request with the
+        // default width and height. But for some strange reason it does not work on the
+        // emulator (real devices work fine). I have to send this before the first refresh
+        // request.
+        // In addition, a refresh request must be sent here. If we wait until a resize frame
+        // buffer message, we will wait forever.
+        if(opts.ViewOpts.ServScaling != ServScaling.Default)
+        {
+          IsSetScalePending = true;
+          SendSetScale((byte)opts.ViewOpts.ServScaling);
+        }
+
+        // Ask the server to send us the entire screen.
+        SendUpdReq(0, 0, frameBufWidth, frameBufHeight, false);
 
         termBgThread = false;
         (new Thread(new ThreadStart(Start))).Start();
@@ -487,6 +504,12 @@ namespace Vnc.Viewer
     {
       byte[] msg = RfbProtoUtil.GetFrameBufUpdReqMsg(x, y, width, height, incremental);
       WriteBytes(msg, RfbCliMsgType.FrameBufUpdReq);
+    }
+
+    internal void SendSetScale(byte scale)
+    {
+      byte[] msg = RfbProtoUtil.GetSetScaleMsg(scale);
+      WriteBytes(msg, RfbCliMsgType.SetScale);
     }
 
     private Color GetColorFromData(byte[] data, UInt32 offset)
@@ -645,10 +668,10 @@ namespace Vnc.Viewer
       {
         IsFmtChgPending = false;
         SetPixelFormat();
-        SendUpdReq(0, 0, servInit.Width, servInit.Height, false);
+        SendUpdReq(0, 0, frameBufWidth, frameBufHeight, false);
       }
       else
-        SendUpdReq(0, 0, servInit.Width, servInit.Height, incremental);
+        SendUpdReq(0, 0, frameBufWidth, frameBufHeight, incremental);
     }
 
     private void ReadScrnUpd()
@@ -709,6 +732,19 @@ namespace Vnc.Viewer
       string txt = ReadAsciiStr((int)len);
     }
 
+    private void ReadResizeFrameBuf()
+    {
+      byte[] msg = ReadBytes(RfbSize.ResizeFrameBuf - 1);
+      ResizeFrameBufMsg resizeFrameBufMsg = new ResizeFrameBufMsg(msg);
+      frameBufWidth = resizeFrameBufMsg.Width;
+      frameBufHeight = resizeFrameBufMsg.Height;
+      // This call actually involves an Invoke, so we need to check termBgThread to make
+      // sure that it does not hang.
+      // TODO: Time to reorg the codebase...
+      if(!termBgThread)
+        view.ResizeFrameBuf(frameBufWidth, frameBufHeight);
+    }
+
     /// <summary>
     ///   This is the entry point of the background thread that handles
     ///   server messages.
@@ -742,6 +778,9 @@ namespace Vnc.Viewer
             case RfbServMsgType.ServCutTxt:
               ReadServCutTxt();
               break;
+            case RfbServMsgType.ResizeFrameBuf:
+              ReadResizeFrameBuf();
+              break;
             default:
               throw new WarnEx(App.GetStr("The server is sending unknown message!"));
           }
@@ -754,7 +793,12 @@ namespace Vnc.Viewer
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Exclamation,
                         MessageBoxDefaultButton.Button1);
-        view.Invoke(closeHdr);
+        // If termBgThread is true then view has been closed.
+        // Don't Invoke or this thread will hang due to a .NET CF bug.
+        // Technically speaking there is a slight chance that the view closes before Invoke
+        // but after checking termBgThread, so this is not bullet proof.
+        if(!termBgThread)
+          view.Invoke(closeHdr);
       }
       catch(IOException)
       {
@@ -763,11 +807,13 @@ namespace Vnc.Viewer
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Exclamation,
                         MessageBoxDefaultButton.Button1);
-        view.Invoke(closeHdr);
+        if(!termBgThread)
+          view.Invoke(closeHdr);
       }
       catch(QuietEx)
       {
-        view.Invoke(closeHdr);
+        if(!termBgThread)
+          view.Invoke(closeHdr);
       }
       catch(WarnEx ex)
       {
@@ -776,7 +822,8 @@ namespace Vnc.Viewer
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Exclamation,
                         MessageBoxDefaultButton.Button1);
-        view.Invoke(closeHdr);
+        if(!termBgThread)
+          view.Invoke(closeHdr);
       }
       finally
       {

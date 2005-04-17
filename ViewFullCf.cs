@@ -32,6 +32,7 @@ namespace Vnc.Viewer
     protected ContextMenu ctxMenu = new ContextMenu();
     private MenuItem ctxRotateMenu = new MenuItem();
     private MenuItem ctxCliScalingMenu = new MenuItem();
+    private MenuItem ctxServScalingMenu = new MenuItem();
     private MenuItem ctxKeysMenu = new MenuItem();
 
     protected override void OnKeyUp(KeyEventArgs e)
@@ -103,6 +104,12 @@ namespace Vnc.Viewer
     {
       base.CheckCliScaling();
       CheckCliScaling(ctxCliScalingMenu);
+    }
+
+    protected override void CheckServScaling()
+    {
+      base.CheckServScaling();
+      CheckServScaling(ctxServScalingMenu);
     }
 
     internal ViewFullCf(Conn conn, ConnOpts connOpts, UInt16 width, UInt16 height) : base(conn, connOpts, width, height)
@@ -199,6 +206,45 @@ namespace Vnc.Viewer
       item.Click += cliScalingHdr;
       ctxCliScalingMenu.MenuItems.Add(item);
       CheckCliScaling(ctxCliScalingMenu);
+      ctxServScalingMenu.Text = App.GetStr("Server-side scaling");
+      ctxMenu.MenuItems.Add(ctxServScalingMenu);
+      item = new MenuItem();
+      item.Text = App.GetStr("None");
+      item.Click += servScalingHdr;
+      ctxServScalingMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("1/2");
+      item.Click += servScalingHdr;
+      ctxServScalingMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("1/3");
+      item.Click += servScalingHdr;
+      ctxServScalingMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("1/4");
+      item.Click += servScalingHdr;
+      ctxServScalingMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("1/5");
+      item.Click += servScalingHdr;
+      ctxServScalingMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("1/6");
+      item.Click += servScalingHdr;
+      ctxServScalingMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("1/7");
+      item.Click += servScalingHdr;
+      ctxServScalingMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("1/8");
+      item.Click += servScalingHdr;
+      ctxServScalingMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("1/9");
+      item.Click += servScalingHdr;
+      ctxServScalingMenu.MenuItems.Add(item);
+      CheckServScaling(ctxServScalingMenu);
       ctxKeysMenu.Text = App.GetStr("Keys");
       ctxMenu.MenuItems.Add(ctxKeysMenu);
       item = new MenuItem();

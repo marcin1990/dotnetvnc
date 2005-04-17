@@ -53,6 +53,20 @@ namespace Vnc.Viewer
     Custom
   }
 
+  internal enum ServScaling
+  {
+    Default = 0, // We don't ask the server in this case.
+    None, // We specifically ask the server not to scale.
+    OneHalf,
+    OneThird,
+    OneFourth,
+    OneFifth,
+    OneSixth,
+    OneSeventh,
+    OneEighth,
+    OneNinth
+  }
+
   internal enum ScrnUpdAlgo
   {
     Batch,
@@ -84,6 +98,12 @@ namespace Vnc.Viewer
     private const string CustomName = "Custom";
     private const string WidthName = "Width";
     private const string HeightName = "Height";
+    private const string ServScalingName = "ServScaling";
+    private const string DefaultName = "Default";
+    private const string OneSixthName = "OneSixth";
+    private const string OneSeventhName = "OneSeventh";
+    private const string OneEighthName = "OneEighth";
+    private const string OneNinthName = "OneNinth";
     private const string ShareServName = "ShareServer";
     private const string ViewOnlyName = "ViewOnly";
     private const string ScrnUpdAlgoName = "ScrnUpdAlgo";
@@ -97,6 +117,7 @@ namespace Vnc.Viewer
     internal CliScaling CliScaling = CliScaling.None;
     internal UInt16 CliScalingWidth = 0;
     internal UInt16 CliScalingHeight = 0;
+    internal ServScaling ServScaling = ServScaling.Default;
     internal bool ShareServ = true;
     internal bool ViewOnly = false;
     internal ScrnUpdAlgo ScrnUpdAlgo = ScrnUpdAlgo.Batch;
@@ -197,6 +218,42 @@ namespace Vnc.Viewer
       elem.SetAttribute(HeightName, CliScalingHeight.ToString());
       rootElem.AppendChild(elem);
 
+      elem = doc.CreateElement(ServScalingName);
+      switch(ServScaling)
+      {
+        case ServScaling.None:
+          elem.InnerText = NoneName;
+          break;
+        case ServScaling.OneHalf:
+          elem.InnerText = OneHalfName;
+          break;
+        case ServScaling.OneThird:
+          elem.InnerText = OneThirdName;
+          break;
+        case ServScaling.OneFourth:
+          elem.InnerText = OneFourthName;
+          break;
+        case ServScaling.OneFifth:
+          elem.InnerText = OneFifthName;
+          break;
+        case ServScaling.OneSixth:
+          elem.InnerText = OneSixthName;
+          break;
+        case ServScaling.OneSeventh:
+          elem.InnerText = OneSeventhName;
+          break;
+        case ServScaling.OneEighth:
+          elem.InnerText = OneEighthName;
+          break;
+        case ServScaling.OneNinth:
+          elem.InnerText = OneNinthName;
+          break;
+        default:
+          elem.InnerText = DefaultName;
+          break;
+      }
+      rootElem.AppendChild(elem);
+
       elem = doc.CreateElement(ShareServName);
       elem.InnerText = ShareServ.ToString();
       rootElem.AppendChild(elem);
@@ -256,7 +313,7 @@ namespace Vnc.Viewer
           PixelSize = PixelSize.Unspec;
           break;
         default:
-          throw new FormatException("PixelSize is unknown.");
+          throw new FormatException("PixelSize is invalid.");
       }
 
       elem = FindXmlElem(doc, rootElem, IsFullScrnName);
@@ -278,7 +335,7 @@ namespace Vnc.Viewer
           Orientation = Orientation.Landscape270;
           break;
         default:
-          throw new FormatException("Orientation is unknown.");
+          throw new FormatException("Orientation is invalid.");
       }
 
       try
@@ -319,7 +376,7 @@ namespace Vnc.Viewer
             CliScaling = CliScaling.Custom;
             break;
           default:
-            throw new FormatException("Client-side scaling setting is unknown.");
+            throw new FormatException("Client-side scaling setting is invalid.");
         }
         try
         {
@@ -346,6 +403,56 @@ namespace Vnc.Viewer
         CliScalingHeight = 0;
       }
 
+      try
+      {
+        elem = FindXmlElem(doc, rootElem, ServScalingName);
+        elemExists = true;
+      }
+      catch(FormatException)
+      {
+        elemExists = false;
+      }
+      if(elemExists)
+      {
+        switch(elem.InnerText)
+        {
+          case DefaultName:
+            ServScaling = ServScaling.Default;
+            break;
+          case NoneName:
+            ServScaling = ServScaling.None;
+            break;
+          case OneHalfName:
+            ServScaling = ServScaling.OneHalf;
+            break;
+          case OneThirdName:
+            ServScaling = ServScaling.OneThird;
+            break;
+          case OneFourthName:
+            ServScaling = ServScaling.OneFourth;
+            break;
+          case OneFifthName:
+            ServScaling = ServScaling.OneFifth;
+            break;
+          case OneSixthName:
+            ServScaling = ServScaling.OneSixth;
+            break;
+          case OneSeventhName:
+            ServScaling = ServScaling.OneSeventh;
+            break;
+          case OneEighthName:
+            ServScaling = ServScaling.OneEighth;
+            break;
+          case OneNinthName:
+            ServScaling = ServScaling.OneNinth;
+            break;
+          default:
+            throw new FormatException("Server-side scaling setting is invalid.");
+        }
+      }
+      else
+        ServScaling = ServScaling.Default;
+
       elem = FindXmlElem(doc, rootElem, ViewOnlyName);
       ViewOnly = Boolean.Parse(elem.InnerText);
 
@@ -355,30 +462,42 @@ namespace Vnc.Viewer
       try
       {
         elem = FindXmlElem(doc, rootElem, ScrnUpdAlgoName);
+        elemExists = true;
+      }
+      catch(FormatException)
+      {
+        elemExists = false;
+      }
+      if(elemExists)
+      {
         switch(elem.InnerText)
         {
           case AsapName:
             ScrnUpdAlgo = ScrnUpdAlgo.Asap;
             break;
-          default:
+          case BatchName:
             ScrnUpdAlgo = ScrnUpdAlgo.Batch;
             break;
+          default:
+            throw new FormatException("Screen update setting is invalid.");
         }
       }
-      catch(FormatException)
-      {
+      else
         ScrnUpdAlgo = ScrnUpdAlgo.Batch;
-      }
 
       try
       {
         elem = FindXmlElem(doc, rootElem, SendMouseLocWhenIdleName);
-        SendMouseLocWhenIdle = Boolean.Parse(elem.InnerText);
+        elemExists = true;
       }
       catch(FormatException)
       {
-        SendMouseLocWhenIdle = false;
+        elemExists = false;
       }
+      if(elemExists)
+        SendMouseLocWhenIdle = Boolean.Parse(elem.InnerText);
+      else
+        SendMouseLocWhenIdle = false;
     }
   }
 }
