@@ -275,6 +275,17 @@ namespace Vnc.Viewer
       item.Text = App.GetStr("Ctrl-Esc (Start Menu)");
       item.Click += keysHdr;
       ctxKeysMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = "-";
+      ctxMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("View single window");
+      item.Click += viewWinHdr;
+      ctxMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("View desktop");
+      item.Click += viewWinHdr;
+      ctxMenu.MenuItems.Add(item);
     }
   }
 }

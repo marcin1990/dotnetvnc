@@ -91,7 +91,6 @@ namespace Vnc.Viewer
     private UInt16 frameBufWidth = 0;
     private UInt16 frameBufHeight = 0;
     internal bool IsFmtChgPending = false;
-    internal bool IsSetScalePending = false;
 
     private EventHandler closeHdr = null;
 
@@ -350,6 +349,8 @@ namespace Vnc.Viewer
 
       stack.Push(RfbEncoding.Hex);
 
+      stack.Push(RfbEncoding.NewFBSize);
+
       byte[] msg;
       msg = RfbProtoUtil.GetSetEncodingsMsgHdr((UInt16)stack.Count);
       WriteBytes(msg, RfbCliMsgType.SetEncodings);
@@ -463,10 +464,7 @@ namespace Vnc.Viewer
         // In addition, a refresh request must be sent here. If we wait until a resize frame
         // buffer message, we will wait forever.
         if(opts.ViewOpts.ServScaling != ServScaling.Default)
-        {
-          IsSetScalePending = true;
           SendSetScale((byte)opts.ViewOpts.ServScaling);
-        }
 
         // Ask the server to send us the entire screen.
         SendUpdReq(0, 0, frameBufWidth, frameBufHeight, false);
@@ -531,15 +529,26 @@ namespace Vnc.Viewer
 
       view.LockFrameBuf();
 
-      // TODO: Can do this faster via native code?
-      int curPos = 0;
-      for(int i = 0; i < rect.Height; i++)
+      try
       {
-        for(int j = 0; j < rect.Width; j++)
+        // TODO: Anything faster?
+        int curPos = 0;
+        for(int i = 0; i < rect.Height; i++)
         {
-          view[(UInt16)(rect.X + j), (UInt16)(rect.Y + i)] = GetColorFromData(rectBytes, (UInt32)curPos);
-          curPos += bytesPp;
+          for(int j = 0; j < rect.Width; j++)
+          {
+            view[(UInt16)(rect.X + j), (UInt16)(rect.Y + i)] = GetColorFromData(rectBytes, (UInt32)curPos);
+            curPos += bytesPp;
+          }
         }
+      }
+      catch(OverflowException)
+      {
+        // Swallow this exception. For some strange reason UltraVNC sends X and Y > 65K.
+      }
+      catch(ArgumentException)
+      {
+        // Swallow this exception. For some strange reason UltraVNC sends invalid values.
       }
 
       view.UnlockFrameBuf();
@@ -684,6 +693,15 @@ namespace Vnc.Viewer
         msg = ReadBytes(RfbSize.FrameBufUpdRectHdr);
         FrameBufUpdRectMsgHdr frameBufUpdRectHdr = new FrameBufUpdRectMsgHdr(msg);
         Rectangle rect = new Rectangle(frameBufUpdRectHdr.X, frameBufUpdRectHdr.Y, frameBufUpdRectHdr.Width, frameBufUpdRectHdr.Height);
+
+        if(frameBufUpdRectHdr.Encoding == RfbEncoding.NewFBSize)
+        {
+          frameBufWidth = (UInt16)rect.Width;
+          frameBufHeight = (UInt16)rect.Height;
+          if(!termBgThread)
+            view.NewFrameBuf(frameBufWidth, frameBufHeight);
+          break;
+        }
 
         switch(frameBufUpdRectHdr.Encoding)
         {

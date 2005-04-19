@@ -67,6 +67,8 @@ namespace Vnc.Viewer
     protected MenuItem refreshItem = new MenuItem();
     protected MenuItem closeConnItem = new MenuItem();
     protected MenuItem viewMenu = new MenuItem();
+    protected MenuItem viewSingleWinItem = new MenuItem();
+    protected MenuItem viewDesktopItem = new MenuItem();
     private MenuItem rotateMenu = new MenuItem();
     private MenuItem cliScalingMenu = new MenuItem();
     private MenuItem servScalingMenu = new MenuItem();
@@ -86,6 +88,7 @@ namespace Vnc.Viewer
     private UInt16 scaledFBHeight = 0;
     private UInt16 newWidth = 0;
     private UInt16 newHeight = 0;
+    private bool isFBResized = false;
 
     protected int mouseX = 0;
     protected int mouseY = 0;
@@ -93,10 +96,13 @@ namespace Vnc.Viewer
     protected bool rightBtnDown = false;
     protected UInt16 tapHoldCnt = 0;
 
+    protected bool isSetSingleWinPending = false;
+
     private bool toKeyUpCtrl = false;
     private bool toKeyUpAlt = false;
 
     protected EventHandler fullScrnHdr = null;
+    protected EventHandler viewWinHdr = null;
     protected EventHandler rotateHdr = null;
     protected EventHandler cliScalingHdr = null;
     protected EventHandler servScalingHdr = null;
@@ -342,9 +348,7 @@ namespace Vnc.Viewer
         Invalidate(rect);
       }
 
-      // If IsSetScalePending, we don't want to bother the server until it gets
-      // back to us with a resize frame buffer message.
-      if(toSendUpdReq && !conn.IsSetScalePending)
+      if(toSendUpdReq)
       {
         toSendUpdReq = false;
         try
@@ -362,6 +366,15 @@ namespace Vnc.Viewer
     {
       newWidth = width;
       newHeight = height;
+      isFBResized = true;
+      Invoke(resizeFrameBufHdr);
+    }
+
+    internal void NewFrameBuf(UInt16 width, UInt16 height)
+    {
+      newWidth = width;
+      newHeight = height;
+      isFBResized = false;
       Invoke(resizeFrameBufHdr);
     }
 
@@ -662,9 +675,7 @@ namespace Vnc.Viewer
 
       try
       {
-        // See the comment regarding IsSetScalePending.
-        if(!conn.IsSetScalePending)
-          conn.SendUpdReq(false);
+        conn.SendUpdReq(false);
       }
       catch(IOException)
       {
@@ -907,8 +918,7 @@ namespace Vnc.Viewer
 
     protected void OnMouseEvent(int x, int y, bool leftBtnDown, bool rightBtnDown)
     {
-      // See the comment regarding IsSetScalePending.
-      if(connOpts.ViewOpts.ViewOnly || conn.IsSetScalePending)
+      if(connOpts.ViewOpts.ViewOnly)
         return;
 
       ScrnToRealXY(ref x, ref y);
@@ -925,10 +935,6 @@ namespace Vnc.Viewer
 
     protected void OnKeyEvent(UInt32 keyChar, bool isDown)
     {
-      // See the comment regarding IsSetScalePending.
-      if(conn.IsSetScalePending)
-        return;
-
       byte[] msg = RfbProtoUtil.GetKeyEventMsg(isDown, keyChar);
       conn.WriteBytes(msg, RfbCliMsgType.KeyEvent);
     }
@@ -1280,7 +1286,6 @@ namespace Vnc.Viewer
 
       try
       {
-        conn.IsSetScalePending = true;
         conn.SendSetScale((byte)connOpts.ViewOpts.ServScaling);
       }
       catch(IOException)
@@ -1457,7 +1462,6 @@ namespace Vnc.Viewer
       try
       {
         conn.SendUpdReq(false);
-        conn.IsSetScalePending = false;
       }
       catch(IOException)
       {
@@ -1466,8 +1470,16 @@ namespace Vnc.Viewer
 
       ResizeCore();
 
-      HScrlBarVal = (UInt16)(oldHScrlBarVal * scaledFBWidth / oldScaledFBWidth);
-      VScrlBarVal = (UInt16)(oldVScrlBarVal * scaledFBHeight / oldScaledFBHeight);
+      if(isFBResized)
+      {
+        HScrlBarVal = (UInt16)(oldHScrlBarVal * scaledFBWidth / oldScaledFBWidth);
+        VScrlBarVal = (UInt16)(oldVScrlBarVal * scaledFBHeight / oldScaledFBHeight);
+      }
+      else
+      {
+        HScrlBarVal = 0;
+        VScrlBarVal = 0;
+      }
     }
 
     private void ResizeFrameBufCore(Orientation orientation, UInt16 width, UInt16 height)
@@ -1531,9 +1543,7 @@ namespace Vnc.Viewer
     {
       try
       {
-        // See the comment regarding IsSetScalePending.
-        if(!conn.IsSetScalePending)
-          conn.SendUpdReq(false);
+        conn.SendUpdReq(false);
       }
       catch(IOException)
       {
@@ -1660,6 +1670,40 @@ namespace Vnc.Viewer
       }
     }
 
+    private void ViewWinClicked(object sender, EventArgs e)
+    {
+      MenuItem item = (MenuItem)sender;
+      if(item.Text == App.GetStr("View desktop"))
+      {
+        try
+        {
+          byte[] msg = RfbProtoUtil.GetSetSingleWinMsg();
+          conn.WriteBytes(msg, RfbCliMsgType.SetSingleWin);
+        }
+        catch(IOException)
+        {
+          Close();
+        }
+      }
+      else
+        isSetSingleWinPending = true;
+    }
+
+    protected void SetSingleWin(int x, int y)
+    {
+      ScrnToRealXY(ref x, ref y);
+      byte[] msg = RfbProtoUtil.GetSetSingleWinMsg((UInt16)x, (UInt16)y);
+      try
+      {
+        conn.WriteBytes(msg, RfbCliMsgType.SetSingleWin);
+        isSetSingleWinPending = false;
+      }
+      catch(IOException)
+      {
+        Close();
+      }
+    }
+
     private void AboutClicked(object sender, EventArgs e)
     {
       App.AboutBox();
@@ -1697,6 +1741,7 @@ namespace Vnc.Viewer
       bgTimer.Enabled = true;
 
       resizeFrameBufHdr = new EventHandler(ResizeFrameBuf);
+      viewWinHdr = new EventHandler(ViewWinClicked);
 
       timer.Tick += new EventHandler(Ticked);
       timer.Interval = Delta;
@@ -1835,6 +1880,17 @@ namespace Vnc.Viewer
       item.Click += pixelSizeHdr;
       pixelSizeMenu.MenuItems.Add(item);
       CheckPixelSize();
+      item = new MenuItem();
+      item.Text = "-";
+      viewMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("View single window");
+      item.Click += viewWinHdr;
+      viewMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("View desktop");
+      item.Click += viewWinHdr;
+      viewMenu.MenuItems.Add(item);
 
       keysMenu.Text = App.GetStr("Keys");
       item = new MenuItem();

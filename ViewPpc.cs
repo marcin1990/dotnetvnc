@@ -100,6 +100,12 @@ namespace Vnc.Viewer
           OnMouseEvent(e.X, e.Y, false, false);
         }
       }
+      else if(isSetSingleWinPending)
+      {
+        // If isSetSingleWinPending, then we don't send a mouse event.
+        // Please note that timer is not enabled if we have isSetSingleWinPending.
+        SetSingleWin(e.X, e.Y);
+      }
       else
         OnMouseEvent(e.X, e.Y, false, false);
 
@@ -115,6 +121,11 @@ namespace Vnc.Viewer
       mouseX = e.X;
       mouseY = e.Y;
       leftBtnDown = true;
+
+      // If isSetSingleWinPending, then we need only to keep track of the coordinates.
+      if(isSetSingleWinPending)
+        return;
+
       timer.Enabled = true; // Tap-and-Hold active.
       tapHoldCnt = 0;
     }
@@ -139,6 +150,11 @@ namespace Vnc.Viewer
 
       mouseX = e.X;
       mouseY = e.Y;
+
+      // See the comment regarding isSetSingleWinPending.
+      if(isSetSingleWinPending)
+        return;
+
       OnMouseEvent(mouseX, mouseY, leftBtnDown, false);
     }
 

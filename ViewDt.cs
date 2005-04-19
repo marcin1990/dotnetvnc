@@ -73,6 +73,15 @@ namespace Vnc.Viewer
       mouseX = e.X;
       mouseY = e.Y;
       GetMouseButtons(out leftBtnDown, out rightBtnDown);
+
+      // Send the coordinates to the server.
+      // Notice that if isSetSingleWinPending, then the timer will not be enabled.
+      if(isSetSingleWinPending)
+      {
+        SetSingleWin(mouseX, mouseY);
+        return;
+      }
+
       OnMouseEvent(mouseX, mouseY, leftBtnDown, rightBtnDown);
     }
 
@@ -91,6 +100,12 @@ namespace Vnc.Viewer
       mouseX = e.X;
       mouseY = e.Y;
       GetMouseButtons(out leftBtnDown, out rightBtnDown);
+
+      // If isSetSingleWinPending, we just need to store the state of the mouse and we don't
+      // send a mouse event to the server.
+      if(isSetSingleWinPending)
+        return;
+
       if(connOpts.ViewOpts.IsFullScrn && ((e.Button & MouseButtons.Right) != 0))
       {
         timer.Enabled = true; // Tap-and-Hold active.
@@ -121,6 +136,11 @@ namespace Vnc.Viewer
       mouseX = e.X;
       mouseY = e.Y;
       GetMouseButtons(out leftBtnDown, out rightBtnDown);
+
+      // See the comment regarding isSetSingleWinPending.
+      if(isSetSingleWinPending)
+        return;
+
       OnMouseEvent(mouseX, mouseY, leftBtnDown, rightBtnDown);
     }
 

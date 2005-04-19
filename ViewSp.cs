@@ -44,14 +44,24 @@ namespace Vnc.Viewer
 
     private void LeftClicked(object sender, EventArgs e)
     {
-      OnMouseEvent(mouseX, mouseY, true, rightBtnDown);
-      OnMouseEvent(mouseX, mouseY, false, rightBtnDown);
+      if(isSetSingleWinPending)
+        SetSingleWin(mouseX, mouseY);
+      else
+      {
+        OnMouseEvent(mouseX, mouseY, true, rightBtnDown);
+        OnMouseEvent(mouseX, mouseY, false, rightBtnDown);
+      }
     }
 
     private void RightClicked(object sender, EventArgs e)
     {
-      OnMouseEvent(mouseX, mouseY, leftBtnDown, true);
-      OnMouseEvent(mouseX, mouseY, leftBtnDown, false);
+      if(isSetSingleWinPending)
+        SetSingleWin(mouseX, mouseY);
+      else
+      {
+        OnMouseEvent(mouseX, mouseY, leftBtnDown, true);
+        OnMouseEvent(mouseX, mouseY, leftBtnDown, false);
+      }
     }
 
     private void CancelExitFullScrn()
@@ -173,12 +183,18 @@ namespace Vnc.Viewer
       {
         case Keys.F1:
           leftBtnDown = true;
+          // If isSetSingleWinPending, we just keep track of the state.
+          if(isSetSingleWinPending)
+            return;
           OnMouseEvent(mouseX, mouseY, leftBtnDown, rightBtnDown);
           break;
         case Keys.F2:
           if(timer.Enabled) // Repeated KeyDown in this case.
             return;
           rightBtnDown = true;
+          // Refer to the comment of isSetSingleWinPending.
+          if(isSetSingleWinPending)
+            return;
           timer.Enabled = true; // Tap-and-Hold active.
           tapHoldCnt = 0;
           break;
@@ -231,12 +247,18 @@ namespace Vnc.Viewer
       if(e.KeyCode == Keys.F1)
       {
         leftBtnDown = false;
-        OnMouseEvent(mouseX, mouseY, leftBtnDown, rightBtnDown);
+        if(isSetSingleWinPending)
+          SetSingleWin(mouseX, mouseY);
+        else
+          OnMouseEvent(mouseX, mouseY, leftBtnDown, rightBtnDown);
       }
       else if(e.KeyCode == Keys.F2)
       {
         rightBtnDown = false;
-        OnMouseEvent(mouseX, mouseY, leftBtnDown, rightBtnDown);
+        if(isSetSingleWinPending)
+          SetSingleWin(mouseX, mouseY);
+        else
+          OnMouseEvent(mouseX, mouseY, leftBtnDown, rightBtnDown);
       }
     }
 

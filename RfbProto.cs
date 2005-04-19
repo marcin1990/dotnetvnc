@@ -74,7 +74,8 @@ namespace Vnc.RfbProto
     FrameBufUpdReq = 3,
     KeyEvent = 4,
     PointerEvent = 5,
-    SetScale = 8
+    SetScale = 8,
+    SetSingleWin = 10
   }
 
   public enum RfbServMsgType : byte
@@ -106,7 +107,8 @@ namespace Vnc.RfbProto
     CopyRect = 1,
     Rre = 2,
     CoRre = 4,
-    Hex = 5
+    Hex = 5,
+    NewFBSize = 0xFFFFFF21
   }
 
   public enum RfbHexSubEncoding : byte
@@ -492,6 +494,23 @@ namespace Vnc.RfbProto
       msg[2] = 0; // Padding
       msg[3] = 0; // Padding
       return msg;
+    }
+
+    public static byte[] GetSetSingleWinMsg(UInt16 x, UInt16 y)
+    {
+      byte[] msg = new byte[6];
+      msg[0] = (byte)RfbCliMsgType.SetSingleWin;
+      msg[1] = 0; // TODO: What is status?
+      msg[2] = (byte)((x & 0xFF00) >> 8);
+      msg[3] = (byte)(x & 0x00FF);
+      msg[4] = (byte)((y & 0xFF00) >> 8);
+      msg[5] = (byte)(y & 0x00FF);
+      return msg;
+    }
+
+    public static byte[] GetSetSingleWinMsg()
+    {
+      return GetSetSingleWinMsg(1, 1);
     }
 
     public static byte[] GetSetEncodingsMsgHdr(UInt16 numEncodings)
