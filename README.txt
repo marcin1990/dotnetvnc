@@ -5,7 +5,7 @@ Introduction
 In addition, I have the following in my mind when I write .NET VNC Viewer:
 -To ensure source and binary compatibility on Smartphones, Pocket PCs and Windows desktops.
 -To make sure that it can be built freely on Pocket PCs (with Pocket C# at http://mifki.ru/pcsharp/) and Windows desktops (only .NET Framework SDK 1.1 needed and Visual Studio not required).
--To learn C# and .NET (Compact) Framework in its pure form. There are no P/Invoke calls, and it is not linked to any other libraries except the Framework.
+-To learn C# and .NET (Compact) Framework in its pure form. Avoid P/Invoke calls and try not to link to any other libraries except the Framework.
 
 Features
 ========
@@ -13,6 +13,7 @@ Features
 -Full screen mode.
 -Screen rotation.
 -Client-side scaling.
+-Server-side scaling and single window mode.
 -Session history.
 -Hi-Res support for VGA Pocket PC and QVGA Smartphones.
 -etc.
@@ -51,8 +52,8 @@ Any comments and questions should be directed to the corresponding forum or trac
 Known Issues
 ============
 -It crashes if executed from a share.
--It may not work with UltraVNC 1.0.0 RC 19.5. Please see the tracker item at http://sourceforge.net/tracker/index.php?func=detail&aid=1110877&group_id=128549&atid=712008. It works OK with RC 18, however.
--Please note that it does not automatically initiate a network connection (at least on a Smartphone it does not). Make sure you have an active network connection or it will not connect to a server.
+-There is a bug in UltraVNC. Don't mix server-side scaling with single window mode. (Try to do this with UltraVNC viewer and you will know what I mean)
+-It does not work with UltraVNC 1.0.0 RC 19.5 to RC 20.4 due to a bug in UltraVNC. Please stay with RC 18 or upgrade to at least RC 20.5.
 
 Comments on C# and .NET (Compact) Framework
 ===========================================
@@ -62,6 +63,13 @@ Comments on C# and .NET (Compact) Framework
 
 History
 =======
+1.0.1.16 (Apr 24, 2005)
+-Server-side scaling and single window mode implemented.
+-On a PPC or a Smartphone, now the viewer calls into the connection manager to initiate a network connection (e.g. GPRS) before connecting to the server. From now on the viewer is not P/Invoke-free anymore.
+-Added an icon.
+-Added an option for users to choose whether to update the screen ASAP or in a batch.
+-Added a sample build script.
+-Fixed a bug that would hang the viewer if the connection is terminated unexpectedly.
 1.0.1.10 (Mar 22, 2005)
 -Client-side scaling implemented.
 -Fixed a problem with Smartphone key input mode which prevents the viewer from going back to mouse mode after exiting extended input mode.
@@ -85,10 +93,7 @@ History
 
 TODOs
 =====
--Connection management on Smartphones.
--Server-side scaling.
 -Status reporting.
--Single window mode.
 -ZRLE encoding.
 -etc.
 
