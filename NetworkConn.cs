@@ -1,4 +1,4 @@
-//  Copyright (c) 2005 Rocky Lo. All Rights Reserved.
+//  Copyright (c) 2005 - 2006 Rocky Lo. All Rights Reserved.
 //
 //  This file is part of the VNC system.
 //
@@ -51,39 +51,55 @@ namespace SystemEx.WindowCE.Net
     {
       // TODO: Validate the parameter.
 
-      UInt32 index = 0;
-      Guid guid;
-      ConnMgrMapURL(url, out guid, ref index);
+      try
+      {
+        UInt32 index = 0;
+        Guid guid;
+        ConnMgrMapURL(url, out guid, ref index);
 
-      // TODO: Validate the guid.
+        // TODO: Validate the guid.
 
-      byte[] connInfo = new byte[ConnInfoSize];
-      BinaryWriter writer = new BinaryWriter(new MemoryStream(connInfo));
-      writer.Write((UInt32)ConnInfoSize); // cbSize
-      writer.Write((UInt32)0x00000001); // dwParams = CONNMGR_PARAM_DESTNETID;
-      writer.Write((UInt32)0); // dwFlags = 0;
-      writer.Write((UInt32)0x00008000); // dwPriority = CONNMGR_PRIORITY_USERINTERACTIVE;
-      writer.Write(Convert.ToInt32(false)); // bExclusive = FALSE;
-      writer.Write(Convert.ToInt32(false)); // bDisabled = FALSE;
-      writer.Write(guid.ToByteArray()); // guidDestNet;
-      writer.Write(IntPtr.Zero.ToInt32()); // hWnd = 0;
-      writer.Write((UInt32)0); // uMsg = 0;
-      writer.Write((UInt32)0); // lParam = 0;
-      writer.Write((UInt32)0); // ulMaxCost = 0;
-      writer.Write((UInt32)0); // ulMinRcvBw = 0;
-      writer.Write((UInt32)0); // ulMaxConnLatency = 0;
+        byte[] connInfo = new byte[ConnInfoSize];
+        BinaryWriter writer = new BinaryWriter(new MemoryStream(connInfo));
+        writer.Write((UInt32)ConnInfoSize); // cbSize
+        writer.Write((UInt32)0x00000001); // dwParams = CONNMGR_PARAM_DESTNETID;
+        writer.Write((UInt32)0); // dwFlags = 0;
+        writer.Write((UInt32)0x00008000); // dwPriority = CONNMGR_PRIORITY_USERINTERACTIVE;
+        writer.Write(Convert.ToInt32(false)); // bExclusive = FALSE;
+        writer.Write(Convert.ToInt32(false)); // bDisabled = FALSE;
+        writer.Write(guid.ToByteArray()); // guidDestNet;
+        writer.Write(IntPtr.Zero.ToInt32()); // hWnd = 0;
+        writer.Write((UInt32)0); // uMsg = 0;
+        writer.Write((UInt32)0); // lParam = 0;
+        writer.Write((UInt32)0); // ulMaxCost = 0;
+        writer.Write((UInt32)0); // ulMinRcvBw = 0;
+        writer.Write((UInt32)0); // ulMaxConnLatency = 0;
 
-      UInt32 status;
-      ConnMgrEstablishConnectionSync(connInfo, out hConn, UInt32.MaxValue, out status);
+        UInt32 status;
+        ConnMgrEstablishConnectionSync(connInfo, out hConn, UInt32.MaxValue, out status);
 
-      // TODO: Report error and raise an exception.
+        // TODO: Report error and raise an exception.
+      }
+      catch(MissingMethodException)
+      {
+        // There is no connection manager on some .NET CF devices, so just swallow
+        // the exception in this case.
+      }
     }
 
     public void Rel()
     {
-      if(hConn != IntPtr.Zero)
-        ConnMgrReleaseConnection(hConn, true);
-      // TODO: Report error and raise an exception.
+      try
+      {
+        if(hConn != IntPtr.Zero)
+          ConnMgrReleaseConnection(hConn, true);
+        // TODO: Report error and raise an exception.
+      }
+      catch(MissingMethodException)
+      {
+        // There is no connection manager on some .NET CF devices, so just swallow
+        // the exception in this case.
+      }
     }
   }
 }
