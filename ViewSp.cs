@@ -199,16 +199,28 @@ namespace Vnc.Viewer
           tapHoldCnt = 0;
           break;
         case Keys.Up:
-          ySpeed -= 3; // TODO: Find an optimal value.
+          if(connOpts.ViewOpts.TurnOffMouseAccel)
+            ySpeed = -2; // Absolute value of speed must be > 1 for the mouse to actually move
+          else
+            ySpeed -= 3; // TODO: Find an optimal value.
           break;
         case Keys.Down:
-          ySpeed += 3; // TODO: Find an optimal value.
+          if(connOpts.ViewOpts.TurnOffMouseAccel)
+            ySpeed = 2; // Absolute value of speed must be > 1 for the mouse to actually move
+          else
+            ySpeed += 3; // TODO: Find an optimal value.
           break;
         case Keys.Left:
-          xSpeed -= 3; // TODO: Find an optimal value.
+          if(connOpts.ViewOpts.TurnOffMouseAccel)
+            xSpeed = -2; // Absolute value of speed must be > 1 for the mouse to actually move
+          else
+            xSpeed -= 3; // TODO: Find an optimal value.
           break;
         case Keys.Right:
-          xSpeed += 3; // TODO: Find an optimal value.
+          if(connOpts.ViewOpts.TurnOffMouseAccel)
+            xSpeed = 2; // Absolute value of speed must be > 1 for the mouse to actually move
+          else
+            xSpeed += 3; // TODO: Find an optimal value.
           break;
         case Keys.F8:
           inputTimer.Enabled = true;
@@ -353,6 +365,17 @@ namespace Vnc.Viewer
         mouseIdleTimer.Enabled = false;
     }
 
+    private void TurnOffMouseAccelClicked(object sender, EventArgs e)
+    {
+      connOpts.ViewOpts.TurnOffMouseAccel = !connOpts.ViewOpts.TurnOffMouseAccel;
+      for(int i = 0; i < optionsMenu.MenuItems.Count; i++)
+      {
+        MenuItem item = optionsMenu.MenuItems[i];
+        if(item.Text == App.GetStr("Turn off mouse acceleration"))
+          item.Checked = connOpts.ViewOpts.TurnOffMouseAccel;
+      }
+    }
+
     protected override void OnPaint(PaintEventArgs e)
     {
       base.OnPaint(e);
@@ -409,6 +432,11 @@ namespace Vnc.Viewer
       subItem.Text = App.GetStr("Send mouse location when idle");
       subItem.Checked = connOpts.ViewOpts.SendMouseLocWhenIdle;
       subItem.Click += new EventHandler(SendMouseLocWhenIdleClicked);
+      optionsMenu.MenuItems.Add(subItem);
+      subItem = new MenuItem();
+      subItem.Text = App.GetStr("Turn off mouse acceleration");
+      subItem.Checked = connOpts.ViewOpts.TurnOffMouseAccel;
+      subItem.Click += new EventHandler(TurnOffMouseAccelClicked);
       optionsMenu.MenuItems.Add(subItem);
       subItem = new MenuItem();
       subItem.Text = "-";

@@ -110,6 +110,7 @@ namespace Vnc.Viewer
     private const string BatchName = "Batch";
     private const string AsapName = "Asap";
     private const string SendMouseLocWhenIdleName = "SendMouseLocationWhenIdle";
+    private const string TurnOffMouseAccelName = "TurnOffMouseAccel";
 
     internal PixelSize PixelSize = PixelSize.Force8Bit;
     internal bool IsFullScrn = false;
@@ -122,6 +123,7 @@ namespace Vnc.Viewer
     internal bool ViewOnly = false;
     internal ScrnUpdAlgo ScrnUpdAlgo = ScrnUpdAlgo.Batch;
     internal bool SendMouseLocWhenIdle = false;
+    internal bool TurnOffMouseAccel = false;
 
     internal ViewOpts()
     {
@@ -276,6 +278,10 @@ namespace Vnc.Viewer
 
       elem = doc.CreateElement(SendMouseLocWhenIdleName);
       elem.InnerText = SendMouseLocWhenIdle.ToString();
+      rootElem.AppendChild(elem);
+
+      elem = doc.CreateElement(TurnOffMouseAccelName);
+      elem.InnerText = TurnOffMouseAccel.ToString();
       rootElem.AppendChild(elem);
     }
 
@@ -498,6 +504,20 @@ namespace Vnc.Viewer
         SendMouseLocWhenIdle = Boolean.Parse(elem.InnerText);
       else
         SendMouseLocWhenIdle = false;
+
+      try
+      {
+        elem = FindXmlElem(doc, rootElem, TurnOffMouseAccelName);
+        elemExists = true;
+      }
+      catch(FormatException)
+      {
+        elemExists = false;
+      }
+      if(elemExists)
+        TurnOffMouseAccel = Boolean.Parse(elem.InnerText);
+      else
+        TurnOffMouseAccel = false;
     }
   }
 }

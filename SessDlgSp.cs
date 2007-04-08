@@ -49,6 +49,7 @@ namespace Vnc.Viewer
 
     private Panel othersPanel = new Panel();
     private CheckBox sendMouseLocWhenIdleBox = new CheckBox();
+    private CheckBox turnOffMouseAccelBox = new CheckBox();
 
     private MenuItem saveDefsItem = new MenuItem();
     private MenuItem restoreDefsItem = new MenuItem();
@@ -63,12 +64,14 @@ namespace Vnc.Viewer
     {
       base.GetOptions();
       viewOpts.SendMouseLocWhenIdle = sendMouseLocWhenIdleBox.Checked;
+      viewOpts.TurnOffMouseAccel = turnOffMouseAccelBox.Checked;
     }
 
     protected override void SetOptions(ViewOpts viewOpts)
     {
       base.SetOptions(viewOpts);
       sendMouseLocWhenIdleBox.Checked = viewOpts.SendMouseLocWhenIdle;
+      turnOffMouseAccelBox.Checked = viewOpts.TurnOffMouseAccel;
     }
 
     protected override void AddConnHistEntry(string entry)
@@ -135,6 +138,7 @@ namespace Vnc.Viewer
       shareServBox.Width = othersPanel.ClientRectangle.Right - shareServBox.Left;
       scrnUpdAlgoBox.Width = othersPanel.ClientRectangle.Right - scrnUpdAlgoBox.Left;
       sendMouseLocWhenIdleBox.Width = othersPanel.ClientRectangle.Right - sendMouseLocWhenIdleBox.Left;
+      turnOffMouseAccelBox.Width = othersPanel.ClientRectangle.Right - turnOffMouseAccelBox.Left;
     }
 
     protected override void OnLoad(EventArgs e)
@@ -260,6 +264,10 @@ namespace Vnc.Viewer
       sendMouseLocWhenIdleBox.Location = new Point(App.DialogSpacing, scrnUpdAlgoBox.Bottom + App.DialogSpacing);
       sendMouseLocWhenIdleBox.Width = othersPanel.ClientRectangle.Right - sendMouseLocWhenIdleBox.Left;
       othersPanel.Controls.Add(sendMouseLocWhenIdleBox);
+      turnOffMouseAccelBox.Text = App.GetStr("Turn off mouse acceleration");
+      turnOffMouseAccelBox.Location = new Point(App.DialogSpacing, sendMouseLocWhenIdleBox.Bottom + App.DialogSpacing);
+      turnOffMouseAccelBox.Width = othersPanel.ClientRectangle.Right - turnOffMouseAccelBox.Left;
+      othersPanel.Controls.Add(turnOffMouseAccelBox);
 
       graphics.Dispose();
 
