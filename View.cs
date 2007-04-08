@@ -1627,6 +1627,18 @@ namespace Vnc.Viewer
           OnKeyEvent(ShiftKey, false);
           SpecKeyUp();
         }
+        else if(item.Text == App.GetStr("Esc"))
+        {
+          OnKeyEvent(EscKey, true);
+          OnKeyEvent(EscKey, false);
+          SpecKeyUp();
+        }
+        else if(item.Text == App.GetStr("Tab"))
+        {
+          OnKeyEvent(Keys.Tab, true);
+          OnKeyEvent(Keys.Tab, false);
+          SpecKeyUp();
+        }
         else if(item.Text == App.GetStr("Ctrl-"))
         {
           OnKeyEvent(CtrlKey, true);
@@ -1899,6 +1911,14 @@ namespace Vnc.Viewer
       keysMenu.MenuItems.Add(item);
       item = new MenuItem();
       item.Text = App.GetStr("Shift up");
+      item.Click += keysHdr;
+      keysMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("Esc");
+      item.Click += keysHdr;
+      keysMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("Tab");
       item.Click += keysHdr;
       keysMenu.MenuItems.Add(item);
       item = new MenuItem();

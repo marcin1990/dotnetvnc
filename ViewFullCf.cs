@@ -256,6 +256,14 @@ namespace Vnc.Viewer
       item.Click += keysHdr;
       ctxKeysMenu.MenuItems.Add(item);
       item = new MenuItem();
+      item.Text = App.GetStr("Esc");
+      item.Click += keysHdr;
+      ctxKeysMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("Tab");
+      item.Click += keysHdr;
+      ctxKeysMenu.MenuItems.Add(item);
+      item = new MenuItem();
       item.Text = App.GetStr("Ctrl-");
       item.Click += keysHdr;
       ctxKeysMenu.MenuItems.Add(item);
