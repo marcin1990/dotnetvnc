@@ -1,4 +1,4 @@
-//  Copyright (C) 2005 Rocky Lo. All Rights Reserved.
+//  Copyright (C) 2005, 2007 Rocky Lo. All Rights Reserved.
 //
 //  This file is part of the VNC system.
 //
@@ -24,6 +24,7 @@
 using System;
 using System.Drawing;
 using System.Windows.Forms;
+using System.Runtime.InteropServices;
 
 namespace Vnc.Viewer
 {
@@ -41,6 +42,14 @@ namespace Vnc.Viewer
     private TextBox inputBox = new TextBox();
 
     private Timer mouseIdleTimer = new Timer();
+
+    [DllImport("coredll.dll")]
+    private static extern short GetKeyState(int keyCode);
+
+    private bool IsCapsLocked()
+    {
+      return ((ushort)GetKeyState((int)Keys.CapsLock) & 0xffff) != 0;
+    }
 
     private void LeftClicked(object sender, EventArgs e)
     {
@@ -199,28 +208,28 @@ namespace Vnc.Viewer
           tapHoldCnt = 0;
           break;
         case Keys.Up:
-          if(connOpts.ViewOpts.TurnOffMouseAccel)
-            ySpeed = -2; // Absolute value of speed must be > 1 for the mouse to actually move
+          if(connOpts.ViewOpts.TurnOffMouseAccel) // TODO: Make the speed configurable.
+            ySpeed = -5; // Absolute value of speed must be > 1 for the mouse to actually move
           else
-            ySpeed -= 3; // TODO: Find an optimal value.
+            ySpeed -= 3;
           break;
         case Keys.Down:
-          if(connOpts.ViewOpts.TurnOffMouseAccel)
-            ySpeed = 2; // Absolute value of speed must be > 1 for the mouse to actually move
+          if(connOpts.ViewOpts.TurnOffMouseAccel) // TODO: Make the speed configurable.
+            ySpeed = 5; // Absolute value of speed must be > 1 for the mouse to actually move
           else
-            ySpeed += 3; // TODO: Find an optimal value.
+            ySpeed += 3;
           break;
         case Keys.Left:
-          if(connOpts.ViewOpts.TurnOffMouseAccel)
-            xSpeed = -2; // Absolute value of speed must be > 1 for the mouse to actually move
+          if(connOpts.ViewOpts.TurnOffMouseAccel) // TODO: Make the speed configurable.
+            xSpeed = -5; // Absolute value of speed must be > 1 for the mouse to actually move
           else
-            xSpeed -= 3; // TODO: Find an optimal value.
+            xSpeed -= 3;
           break;
         case Keys.Right:
-          if(connOpts.ViewOpts.TurnOffMouseAccel)
-            xSpeed = 2; // Absolute value of speed must be > 1 for the mouse to actually move
+          if(connOpts.ViewOpts.TurnOffMouseAccel) // TODO: Make the speed configurable.
+            xSpeed = 5; // Absolute value of speed must be > 1 for the mouse to actually move
           else
-            xSpeed += 3; // TODO: Find an optimal value.
+            xSpeed += 3;
           break;
         case Keys.F8:
           inputTimer.Enabled = true;
@@ -256,21 +265,32 @@ namespace Vnc.Viewer
       if(timer.Enabled)
         CancelExitFullScrn();
 
-      if(e.KeyCode == Keys.F1)
+      switch(e.KeyCode)
       {
-        leftBtnDown = false;
-        if(isSetSingleWinPending)
-          SetSingleWin(mouseX, mouseY);
-        else
-          OnMouseEvent(mouseX, mouseY, leftBtnDown, rightBtnDown);
-      }
-      else if(e.KeyCode == Keys.F2)
-      {
-        rightBtnDown = false;
-        if(isSetSingleWinPending)
-          SetSingleWin(mouseX, mouseY);
-        else
-          OnMouseEvent(mouseX, mouseY, leftBtnDown, rightBtnDown);
+        case Keys.F1:
+          leftBtnDown = false;
+          if(isSetSingleWinPending)
+            SetSingleWin(mouseX, mouseY);
+          else
+            OnMouseEvent(mouseX, mouseY, leftBtnDown, rightBtnDown);
+          break;
+        case Keys.F2:
+          rightBtnDown = false;
+          if(isSetSingleWinPending)
+            SetSingleWin(mouseX, mouseY);
+          else
+            OnMouseEvent(mouseX, mouseY, leftBtnDown, rightBtnDown);
+          break;
+        case Keys.P:
+        case Keys.Q:
+          if(!(e.Shift ^ IsCapsLocked()))
+          {
+            char c = (e.KeyCode == Keys.P) ? 'p' : 'q';
+            // Fixing a problem for Smartphones with Qwerty keyboards.
+            KeyPressEventArgs eventArgs = new KeyPressEventArgs(c);
+            OnKeyPress(eventArgs);
+          }
+          break;
       }
     }
 
