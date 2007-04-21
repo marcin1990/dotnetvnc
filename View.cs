@@ -74,6 +74,7 @@ namespace Vnc.Viewer
     private MenuItem servScalingMenu = new MenuItem();
     private MenuItem pixelSizeMenu = new MenuItem();
     protected MenuItem keysMenu = new MenuItem();
+    private MenuItem fnMenu = new MenuItem();
     protected MenuItem optionsMenu = new MenuItem();
     protected MenuItem aboutItem = new MenuItem();
 
@@ -1675,6 +1676,78 @@ namespace Vnc.Viewer
           OnKeyEvent(CtrlKey, false);
           toKeyUpCtrl = false;
         }
+        else if(item.Text == App.GetStr("F1"))
+        {
+          OnKeyEvent(Keys.F1, true);
+          OnKeyEvent(Keys.F1, false);
+          SpecKeyUp();
+        }
+        else if(item.Text == App.GetStr("F2"))
+        {
+          OnKeyEvent(Keys.F2, true);
+          OnKeyEvent(Keys.F2, false);
+          SpecKeyUp();
+        }
+        else if(item.Text == App.GetStr("F3"))
+        {
+          OnKeyEvent(Keys.F3, true);
+          OnKeyEvent(Keys.F3, false);
+          SpecKeyUp();
+        }
+        else if(item.Text == App.GetStr("F4"))
+        {
+          OnKeyEvent(Keys.F4, true);
+          OnKeyEvent(Keys.F4, false);
+          SpecKeyUp();
+        }
+        else if(item.Text == App.GetStr("F5"))
+        {
+          OnKeyEvent(Keys.F5, true);
+          OnKeyEvent(Keys.F5, false);
+          SpecKeyUp();
+        }
+        else if(item.Text == App.GetStr("F6"))
+        {
+          OnKeyEvent(Keys.F6, true);
+          OnKeyEvent(Keys.F6, false);
+          SpecKeyUp();
+        }
+        else if(item.Text == App.GetStr("F7"))
+        {
+          OnKeyEvent(Keys.F7, true);
+          OnKeyEvent(Keys.F7, false);
+          SpecKeyUp();
+        }
+        else if(item.Text == App.GetStr("F8"))
+        {
+          OnKeyEvent(Keys.F8, true);
+          OnKeyEvent(Keys.F8, false);
+          SpecKeyUp();
+        }
+        else if(item.Text == App.GetStr("F9"))
+        {
+          OnKeyEvent(Keys.F9, true);
+          OnKeyEvent(Keys.F9, false);
+          SpecKeyUp();
+        }
+        else if(item.Text == App.GetStr("F10"))
+        {
+          OnKeyEvent(Keys.F10, true);
+          OnKeyEvent(Keys.F10, false);
+          SpecKeyUp();
+        }
+        else if(item.Text == App.GetStr("F11"))
+        {
+          OnKeyEvent(Keys.F11, true);
+          OnKeyEvent(Keys.F11, false);
+          SpecKeyUp();
+        }
+        else if(item.Text == App.GetStr("F12"))
+        {
+          OnKeyEvent(Keys.F12, true);
+          OnKeyEvent(Keys.F12, false);
+          SpecKeyUp();
+        }
       }
       catch(IOException)
       {
@@ -1941,6 +2014,56 @@ namespace Vnc.Viewer
       item.Text = App.GetStr("Ctrl-Esc (Start Menu)");
       item.Click += keysHdr;
       keysMenu.MenuItems.Add(item);
+      fnMenu.Text = App.GetStr("Fn");
+      keysMenu.MenuItems.Add(fnMenu);
+      item = new MenuItem();
+      item.Text = App.GetStr("F1");
+      item.Click += keysHdr;
+      fnMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("F2");
+      item.Click += keysHdr;
+      fnMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("F3");
+      item.Click += keysHdr;
+      fnMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("F4");
+      item.Click += keysHdr;
+      fnMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("F5");
+      item.Click += keysHdr;
+      fnMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("F6");
+      item.Click += keysHdr;
+      fnMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("F7");
+      item.Click += keysHdr;
+      fnMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("F8");
+      item.Click += keysHdr;
+      fnMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("F9");
+      item.Click += keysHdr;
+      fnMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("F10");
+      item.Click += keysHdr;
+      fnMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("F11");
+      item.Click += keysHdr;
+      fnMenu.MenuItems.Add(item);
+      item = new MenuItem();
+      item.Text = App.GetStr("F12");
+      item.Click += keysHdr;
+      fnMenu.MenuItems.Add(item);
 
       optionsMenu.Text = App.GetStr("Options");
       item = new MenuItem();
