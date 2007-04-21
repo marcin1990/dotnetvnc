@@ -1,4 +1,4 @@
-//  Copyright (C) 2005 Rocky Lo. All Rights Reserved.
+//  Copyright (C) 2005, 2007 Rocky Lo. All Rights Reserved.
 //
 //  This file is part of the VNC system.
 //
@@ -42,6 +42,8 @@ namespace Vnc.Viewer
 
       remoteEndPt.Height *= 2;
       passwdBox.Height *= 2;
+      listenBox.Height *= 2;
+      listenPortBox.Height *= 2;
       fullScrnBox.Height *= 2;
       cliScalingWidthBox.Height *= 2;
       cliScalingHeightBox.Height *= 2;

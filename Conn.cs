@@ -1,4 +1,4 @@
-//  Copyright (c) 2004-2005 Rocky Lo. All Rights Reserved.
+//  Copyright (c) 2004-2005, 2007 Rocky Lo. All Rights Reserved.
 //  Copyright (C) 2002 Ultr@VNC Team Members. All Rights Reserved.
 //  Copyright (C) 2000-2002 Const Kaplinsky. All Rights Reserved.
 //  Copyright (C) 2002 RealVNC Ltd. All Rights Reserved.
@@ -145,6 +145,32 @@ namespace Vnc.Viewer
       catch(SocketException)
       {
         throw new WarnEx(App.GetStr("Unable to connect to the specified server!"));
+      }
+    }
+
+    private void Listen()
+    {
+      TcpListener listener = new TcpListener(IPAddress.Any, opts.Port);
+      try
+      {
+        listener.Start();
+        tcpClient = listener.AcceptTcpClient();
+        stream = tcpClient.GetStream();
+        reader = new BinaryReader(stream, Encoding.ASCII);
+        writer = new BinaryWriter(stream, Encoding.ASCII);
+      }
+      catch(SocketException)
+      {
+        throw new WarnEx(App.GetStr("Unable to get an incoming connection from the server!"));
+      }
+      finally
+      {
+        try
+        {
+          listener.Stop();
+        }
+        catch
+        {}
       }
     }
 
@@ -436,7 +462,10 @@ namespace Vnc.Viewer
         EstNetworkConn();
 
         // Make a connection to the server.
-        Connect();
+        if(opts.ConnMode == ConnMode.Active)
+          Connect();
+        else
+          Listen();
 
         // Negotiate the protocol version with the server.
         NegoProtoVer();

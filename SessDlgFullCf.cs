@@ -1,4 +1,4 @@
-//  Copyright (C) 2005 Rocky Lo. All Rights Reserved.
+//  Copyright (C) 2005, 2007 Rocky Lo. All Rights Reserved.
 //
 //  This file is part of the VNC system.
 //
@@ -39,6 +39,8 @@ namespace Vnc.Viewer
     protected TabPage generalPage = new TabPage();
     protected ListBox recentBox = new ListBox();
 
+    protected TabPage connModePage = new TabPage();
+
     protected TabPage displayPage = new TabPage();
 
     protected TabPage scalingPage = new TabPage();
@@ -76,8 +78,17 @@ namespace Vnc.Viewer
     {
       if(!ValidateCliScaling())
         return;
-      if(!ValidateHostPort())
-        return;
+      GetConnMode();
+      if(ConnMode == ConnMode.Active)
+      {
+        if(!ValidateHostPort())
+          return;
+      }
+      else
+      {
+        if(!ValidateListenPort())
+          return;
+      }
       GetPasswd();
       GetOptions();
 
@@ -158,7 +169,11 @@ namespace Vnc.Viewer
                         MessageBoxDefaultButton.Button1);
         return;
       }
-      remoteEndPt.Text = connOpts.Host + "::" + connOpts.Port;
+      listenBox.Checked = connOpts.ConnMode == ConnMode.Passive;
+      if(connOpts.ConnMode == ConnMode.Active)
+        remoteEndPt.Text = connOpts.Host + "::" + connOpts.Port;
+      else
+        listenPortBox.Text = connOpts.Port.ToString();
       passwdBox.Text = connOpts.Passwd;
       SetOptions(connOpts.ViewOpts);
     }
@@ -170,7 +185,8 @@ namespace Vnc.Viewer
 
     private void RecentBoxChanged(object sender, EventArgs e)
     {
-      remoteEndPt.Text = recentBox.Text;
+      if(ConnMode == ConnMode.Active)
+        remoteEndPt.Text = recentBox.Text;
     }
 
     protected override void OnResize(EventArgs e)
@@ -185,6 +201,8 @@ namespace Vnc.Viewer
       passwdBox.Width = generalPage.ClientRectangle.Right - App.DialogSpacing - passwdBox.Left;
       recentBox.Width = generalPage.ClientRectangle.Right - App.DialogSpacing - recentBox.Left;
       recentBox.Height = generalPage.ClientRectangle.Bottom - App.DialogSpacing - recentBox.Top;
+      listenBox.Width = connModePage.ClientRectangle.Right - listenBox.Width;
+      listenPortBox.Width = connModePage.ClientRectangle.Right - App.DialogSpacing - listenPortBox.Left;
       rotateBox.Width = displayPage.ClientRectangle.Right - App.DialogSpacing - rotateBox.Left;
       pixelSizeBox.Width = displayPage.ClientRectangle.Right - App.DialogSpacing - pixelSizeBox.Left;
       cliScalingBox.Width = scalingPage.ClientRectangle.Right - App.DialogSpacing - cliScalingBox.Left;
@@ -259,6 +277,20 @@ namespace Vnc.Viewer
       recentBox.KeyPress += keyPressHdr;
       recentBox.SelectedIndexChanged += new EventHandler(RecentBoxChanged);
       generalPage.Controls.Add(recentBox);
+
+      tabCtrl.TabPages.Add(connModePage);
+      connModePage.Text = App.GetStr("Connection");
+      listenBox.Location = new Point(App.DialogSpacing, App.DialogSpacing);
+      listenBox.KeyPress += keyPressHdr;
+      listenBox.Width = connModePage.ClientRectangle.Right - listenBox.Left;
+      connModePage.Controls.Add(listenBox);
+      listenPortLbl.Size = graphics.MeasureString(listenPortLbl.Text, Font).ToSize();
+      listenPortLbl.Location = new Point(listenBox.Left, listenBox.Bottom + App.DialogSpacing);
+      connModePage.Controls.Add(listenPortLbl);
+      listenPortBox.Location = new Point(listenPortLbl.Right + App.DialogSpacing, listenPortLbl.Top);
+      listenPortBox.Width = connModePage.ClientRectangle.Right - App.DialogSpacing - listenPortBox.Left;
+      listenPortBox.KeyPress += keyPressHdr;
+      connModePage.Controls.Add(listenPortBox);
 
       tabCtrl.TabPages.Add(displayPage);
       displayPage.Text = App.GetStr("Display");

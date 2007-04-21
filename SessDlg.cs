@@ -1,4 +1,4 @@
-//  Copyright (C) 2004-2005 Rocky Lo. All Rights Reserved.
+//  Copyright (C) 2004-2005, 2007 Rocky Lo. All Rights Reserved.
 //  Copyright (C) 2002 Ultr@VNC Team Members. All Rights Reserved.
 //  Copyright (C) 1999 AT&T Laboratories Cambridge. All Rights Reserved.
 //
@@ -35,7 +35,10 @@ namespace Vnc.Viewer
   {
     /// <summary>This is default port to connect to.</summary>
     private const UInt16 VncPort = 5900;
+    /// <summary>This is default port to listen on.</summary>
+    private const UInt16 VncListenPort = 5500;
 
+    private ConnMode connMode = ConnMode.Active;
     private string host = null;
     private int port = -1;
     private string passwd = null;
@@ -48,6 +51,10 @@ namespace Vnc.Viewer
     protected Label passwdLbl = new Label();
     protected TextBox passwdBox = new TextBox();
     protected Label recentLbl = new Label();
+
+    protected CheckBox listenBox = new CheckBox();
+    protected Label listenPortLbl = new Label();
+    protected TextBox listenPortBox = new TextBox();
 
     protected CheckBox fullScrnBox = new CheckBox();
     protected Label rotateLbl = new Label();
@@ -99,7 +106,18 @@ namespace Vnc.Viewer
     {
       get
       {
-        return new ConnOpts(host, port, passwd, viewOpts);
+        if(connMode == ConnMode.Active)
+          return new ConnOpts(host, port, passwd, viewOpts);
+        else
+          return new ConnOpts(port, passwd, viewOpts);
+      }
+    }
+
+    protected ConnMode ConnMode
+    {
+      get
+      {
+        return connMode;
       }
     }
 
@@ -112,11 +130,21 @@ namespace Vnc.Viewer
     {
       if(!ValidateCliScaling())
         return;
-      if(!ValidateHostPort())
-        return;
+      GetConnMode();
+      if(connMode == ConnMode.Active)
+      {
+        if(!ValidateHostPort())
+          return;
+      }
+      else
+      {
+        if(!ValidateListenPort())
+          return;
+      }
       GetPasswd();
       GetOptions();
-      SaveConnHist();
+      if(connMode == ConnMode.Active)
+        SaveConnHist();
       DialogResult = DialogResult.OK;
     }
 
@@ -166,6 +194,11 @@ namespace Vnc.Viewer
                         MessageBoxDefaultButton.Button1);
         return false;
       }
+    }
+
+    protected void GetConnMode()
+    {
+      connMode = listenBox.Checked? ConnMode.Passive : ConnMode.Active;
     }
 
     protected bool ValidateHostPort()
@@ -250,6 +283,40 @@ namespace Vnc.Viewer
           host = remoteEndPt.Text.Substring(0, indexOfColon);
         }
       }
+      return true;
+    }
+
+    protected bool ValidateListenPort()
+    {
+      if(listenPortBox.Text.Length > 0)
+      {
+        try
+        {
+          port = Int32.Parse(listenPortBox.Text);
+          if(port < 0)
+            throw new OverflowException();
+        }
+        catch(FormatException)
+        {
+          MessageBox.Show(App.GetStr("The listening port is invalid!"),
+                          Text,
+                          MessageBoxButtons.OK,
+                          MessageBoxIcon.Exclamation,
+                          MessageBoxDefaultButton.Button1);
+          return false;
+        }
+        catch(OverflowException)
+        {
+          MessageBox.Show(App.GetStr("The listening port is invalid!"),
+                          Text,
+                          MessageBoxButtons.OK,
+                          MessageBoxIcon.Exclamation,
+                          MessageBoxDefaultButton.Button1);
+          return false;
+        }
+      }
+      else
+        port = VncListenPort;
       return true;
     }
 
@@ -499,6 +566,16 @@ namespace Vnc.Viewer
       SetOptions(viewOpts);
     }
 
+    private void ListenBoxChanged(object sender, EventArgs e)
+    {
+      if(listenBox.Checked)
+        remoteEndPt.Text = "";
+      else
+        listenPortBox.Text = "";
+      remoteEndPt.Enabled = !listenBox.Checked;
+      listenPortBox.Enabled = listenBox.Checked;
+    }
+
     private void CliScalingBoxChanged(object sender, EventArgs e)
     {
       cliScalingWidthBox.Enabled = cliScalingBox.Text == App.GetStr("Custom");
@@ -520,6 +597,10 @@ namespace Vnc.Viewer
       passwdLbl.Text = App.GetStr("Password:");
       passwdBox.PasswordChar = '*';
       recentLbl.Text = App.GetStr("Recent:");
+
+      listenBox.Text = App.GetStr("Listen mode");
+      listenBox.CheckStateChanged += new EventHandler(ListenBoxChanged);
+      listenPortLbl.Text = App.GetStr("Listening port:");
 
       fullScrnBox.Text = App.GetStr("Full screen mode");
       rotateLbl.Text = App.GetStr("Orientation:");

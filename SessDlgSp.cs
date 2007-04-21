@@ -31,6 +31,7 @@ namespace Vnc.Viewer
   {
     private MenuItem okItem = new MenuItem();
     private MenuItem generalItem = new MenuItem();
+    private MenuItem connModeItem = new MenuItem();
     private MenuItem displayItem = new MenuItem();
     private MenuItem scalingItem = new MenuItem();
     private MenuItem othersItem = new MenuItem();
@@ -42,6 +43,8 @@ namespace Vnc.Viewer
 
     private Panel generalPanel = new Panel();
     private ComboBox recentBox = new ComboBox();
+
+    private Panel connModePanel = new Panel();
 
     private Panel displayPanel = new Panel();
 
@@ -81,16 +84,23 @@ namespace Vnc.Viewer
 
     private void RecentBoxChanged(object sender, EventArgs e)
     {
-      remoteEndPt.Text = recentBox.Text;
+      if(ConnMode == ConnMode.Active)
+        remoteEndPt.Text = recentBox.Text;
     }
 
     private void SwitchPanel(MenuItem item)
     {
       generalPanel.Visible = false;
+      connModePanel.Visible = false;
       displayPanel.Visible = false;
       scalingPanel.Visible = false;
       othersPanel.Visible = false;
-      if(item == displayItem)
+      if(item == connModeItem)
+      {
+        connModePanel.Visible = true;
+        listenBox.Focus();
+      }
+      else if(item == displayItem)
       {
         displayPanel.Visible = true;
         fullScrnBox.Focus();
@@ -124,6 +134,9 @@ namespace Vnc.Viewer
       remoteEndPt.Width = generalPanel.ClientRectangle.Right - App.DialogSpacing - remoteEndPt.Left;
       passwdBox.Width = generalPanel.ClientRectangle.Right - App.DialogSpacing - passwdBox.Left;
       recentBox.Width = generalPanel.ClientRectangle.Right - App.DialogSpacing - recentBox.Left;
+      connModePanel.Size = ClientRectangle.Size;
+      listenBox.Width = connModePanel.ClientRectangle.Right - listenBox.Left;
+      listenPortBox.Width = connModePanel.ClientRectangle.Right - App.DialogSpacing - listenPortBox.Left;
       displayPanel.Size = ClientRectangle.Size;
       fullScrnBox.Width = displayPanel.ClientRectangle.Right - fullScrnBox.Left;
       rotateBox.Width = displayPanel.ClientRectangle.Right - App.DialogSpacing - rotateBox.Left;
@@ -155,6 +168,9 @@ namespace Vnc.Viewer
       generalItem.Text = App.GetStr("General...");
       generalItem.Click += panelItemHdr;
       optionsItem.MenuItems.Add(generalItem);
+      connModeItem.Text = App.GetStr("Connection...");
+      connModeItem.Click += panelItemHdr;
+      optionsItem.MenuItems.Add(connModeItem);
       displayItem.Text = App.GetStr("Display...");
       displayItem.Click += panelItemHdr;
       optionsItem.MenuItems.Add(displayItem);
@@ -201,6 +217,18 @@ namespace Vnc.Viewer
       recentBox.Width = generalPanel.ClientRectangle.Right - App.DialogSpacing - recentBox.Left;
       recentBox.SelectedIndexChanged += new EventHandler(RecentBoxChanged);
       generalPanel.Controls.Add(recentBox);
+
+      connModePanel.Size = ClientRectangle.Size;
+      Controls.Add(connModePanel);
+      listenBox.Location = new Point(App.DialogSpacing, App.DialogSpacing);
+      listenBox.Width = connModePanel.ClientRectangle.Right - listenBox.Left;
+      connModePanel.Controls.Add(listenBox);
+      listenPortLbl.Location = new Point(App.DialogSpacing, listenBox.Bottom + App.DialogSpacing);
+      listenPortLbl.Size = graphics.MeasureString(listenPortLbl.Text, Font).ToSize();
+      connModePanel.Controls.Add(listenPortLbl);
+      listenPortBox.Location = new Point(App.DialogSpacing, listenPortLbl.Bottom + App.DialogSpacing);
+      listenPortBox.Width = connModePanel.ClientRectangle.Right - App.DialogSpacing - listenPortBox.Left;
+      connModePanel.Controls.Add(listenPortBox);
 
       displayPanel.Size = ClientRectangle.Size;
       Controls.Add(displayPanel);

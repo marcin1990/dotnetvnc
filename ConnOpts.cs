@@ -1,4 +1,4 @@
-//  Copyright (c) 2004-2005 Rocky Lo. All Rights Reserved.
+//  Copyright (c) 2004-2005, 2007 Rocky Lo. All Rights Reserved.
 //
 //  This file is part of the VNC system.
 //
@@ -26,14 +26,24 @@ using System.Xml;
 
 namespace Vnc.Viewer
 {
+  internal enum ConnMode
+  {
+    Active,
+    Passive
+  }
+
   /// <remarks>This class is responsible for loading and saving connection parameters.</remarks>
   internal class ConnOpts
   {
+    private const string ConnModeName = "ConnMode";
+    private const string ActiveName = "Active";
+    private const string PassiveName = "Passive";
     private const string ConnName = "Connection";
     private const string HostName = "Host";
     private const string PortName = "Port";
     private const string PasswdName = "Password";
 
+    internal ConnMode ConnMode = ConnMode.Active;
     internal string Host = null;
     internal int Port = -1;
     internal string Passwd = null;
@@ -55,6 +65,21 @@ namespace Vnc.Viewer
       ViewOpts = viewOpts;
     }
 
+    internal ConnOpts(int port, string passwd, ViewOpts viewOpts)
+    {
+      // TODO: Check the minimum and maximum values.
+      if(port < 0)
+        throw new ArgumentException("port", "Not a valid value");
+      if(viewOpts == null)
+        throw new ArgumentException("viewOpts", "Cannot be null");
+
+      ConnMode = ConnMode.Passive;
+      Host = "localhost";
+      Port = port;
+      Passwd = passwd;
+      ViewOpts = viewOpts;
+    }
+
     internal ConnOpts(string fileName)
     {
       Load(fileName);
@@ -66,7 +91,19 @@ namespace Vnc.Viewer
       XmlElement rootElem = doc.CreateElement(ConnName);
       doc.AppendChild(rootElem);
 
-      XmlElement elem = doc.CreateElement(HostName);
+      XmlElement elem = doc.CreateElement(ConnModeName);
+      switch(ConnMode)
+      {
+        case ConnMode.Passive:
+          elem.InnerText = PassiveName;
+          break;
+        default:
+          elem.InnerText = ActiveName;
+          break;
+      }
+      rootElem.AppendChild(elem);
+
+      elem = doc.CreateElement(HostName);
       elem.InnerText = Host;
       rootElem.AppendChild(elem);
 
@@ -91,11 +128,32 @@ namespace Vnc.Viewer
       XmlDocument doc = new XmlDocument();
       doc.Load(fileName);
 
-      XmlNodeList list = doc.GetElementsByTagName(HostName);
+      XmlNodeList list = doc.GetElementsByTagName(ConnModeName);
       if(list.Count > 0)
-        Host = list[0].InnerText;
+      {
+        switch(list[0].InnerText)
+        {
+          case PassiveName:
+            ConnMode = ConnMode.Passive;
+            break;
+          default:
+            ConnMode = ConnMode.Active;
+            break;
+        }
+      }
       else
-        throw new FormatException("Host name is not found.");
+        ConnMode = ConnMode.Active;
+
+      if(ConnMode == ConnMode.Active)
+      {
+        list = doc.GetElementsByTagName(HostName);
+        if(list.Count > 0)
+          Host = list[0].InnerText;
+        else
+          throw new FormatException("Host name is not found.");
+      }
+      else
+        Host = "localhost";
 
       list = doc.GetElementsByTagName(PortName);
       if(list.Count > 0)
