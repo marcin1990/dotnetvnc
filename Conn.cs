@@ -154,6 +154,11 @@ namespace Vnc.Viewer
       try
       {
         listener.Start();
+
+        ListenDlg listenDlg = new ListenDlg(listener);
+        if(listenDlg.ShowDialog() != DialogResult.OK)
+          throw new QuietEx();
+
         tcpClient = listener.AcceptTcpClient();
         stream = tcpClient.GetStream();
         reader = new BinaryReader(stream, Encoding.ASCII);

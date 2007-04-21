@@ -600,7 +600,8 @@ namespace Vnc.Viewer
 
       listenBox.Text = App.GetStr("Listen mode");
       listenBox.CheckStateChanged += new EventHandler(ListenBoxChanged);
-      listenPortLbl.Text = App.GetStr("Listening port:");
+      listenPortLbl.Text = App.GetStr("Port:");
+      listenPortBox.Enabled = false;
 
       fullScrnBox.Text = App.GetStr("Full screen mode");
       rotateLbl.Text = App.GetStr("Orientation:");
