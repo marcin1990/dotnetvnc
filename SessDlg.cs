@@ -117,7 +117,7 @@ namespace Vnc.Viewer
     {
       get
       {
-        return connMode;
+        return listenBox.Checked? ConnMode.Passive : ConnMode.Active;
       }
     }
 

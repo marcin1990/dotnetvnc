@@ -52,29 +52,75 @@ namespace Vnc.Viewer
 
     private Panel othersPanel = new Panel();
     private CheckBox sendMouseLocWhenIdleBox = new CheckBox();
-    private CheckBox turnOffMouseAccelBox = new CheckBox();
+    private ComboBox mouseSpeedBox = new ComboBox();
 
     private MenuItem saveDefsItem = new MenuItem();
     private MenuItem restoreDefsItem = new MenuItem();
 
     internal SessDlgSp() : base()
-    {}
+    {
+      SetupMouseSpeedBox();
+    }
 
     internal SessDlgSp(ViewOpts viewOpts) : base(viewOpts)
-    {}
+    {
+      SetupMouseSpeedBox();
+    }
+
+    private void SetupMouseSpeedBox()
+    {
+      mouseSpeedBox.Items.Add(App.GetStr("Mouse acceleration on"));
+      mouseSpeedBox.Items.Add(App.GetStr("Mouse speed - low"));
+      mouseSpeedBox.Items.Add(App.GetStr("Mouse speed - normal"));
+      mouseSpeedBox.Items.Add(App.GetStr("Mouse speed - high"));
+    }
 
     protected override void GetOptions()
     {
       base.GetOptions();
       viewOpts.SendMouseLocWhenIdle = sendMouseLocWhenIdleBox.Checked;
-      viewOpts.TurnOffMouseAccel = turnOffMouseAccelBox.Checked;
+      switch(mouseSpeedBox.SelectedIndex)
+      {
+        case 1:
+          viewOpts.MouseAccelMode = false;
+          viewOpts.MouseSpeed = MouseSpeed.Low;
+          break;
+        case 2:
+          viewOpts.MouseAccelMode = false;
+          viewOpts.MouseSpeed = MouseSpeed.Normal;
+          break;
+        case 3:
+          viewOpts.MouseAccelMode = false;
+          viewOpts.MouseSpeed = MouseSpeed.High;
+          break;
+        default:
+          viewOpts.MouseAccelMode = true;
+          viewOpts.MouseSpeed = MouseSpeed.Normal;
+          break;
+      }
     }
 
     protected override void SetOptions(ViewOpts viewOpts)
     {
       base.SetOptions(viewOpts);
       sendMouseLocWhenIdleBox.Checked = viewOpts.SendMouseLocWhenIdle;
-      turnOffMouseAccelBox.Checked = viewOpts.TurnOffMouseAccel;
+      if(viewOpts.MouseAccelMode)
+        mouseSpeedBox.SelectedIndex = 0;
+      else
+      {
+        switch(viewOpts.MouseSpeed)
+        {
+          case MouseSpeed.Low:
+            mouseSpeedBox.SelectedIndex = 1;
+            break;
+          case MouseSpeed.High:
+            mouseSpeedBox.SelectedIndex = 3;
+            break;
+          default:
+            mouseSpeedBox.SelectedIndex = 2;
+            break;
+        }
+      }
     }
 
     protected override void AddConnHistEntry(string entry)
@@ -151,7 +197,7 @@ namespace Vnc.Viewer
       shareServBox.Width = othersPanel.ClientRectangle.Right - shareServBox.Left;
       scrnUpdAlgoBox.Width = othersPanel.ClientRectangle.Right - scrnUpdAlgoBox.Left;
       sendMouseLocWhenIdleBox.Width = othersPanel.ClientRectangle.Right - sendMouseLocWhenIdleBox.Left;
-      turnOffMouseAccelBox.Width = othersPanel.ClientRectangle.Right - turnOffMouseAccelBox.Left;
+      mouseSpeedBox.Width = othersPanel.ClientRectangle.Right - App.DialogSpacing - mouseSpeedBox.Left;
     }
 
     protected override void OnLoad(EventArgs e)
@@ -292,10 +338,9 @@ namespace Vnc.Viewer
       sendMouseLocWhenIdleBox.Location = new Point(App.DialogSpacing, scrnUpdAlgoBox.Bottom + App.DialogSpacing);
       sendMouseLocWhenIdleBox.Width = othersPanel.ClientRectangle.Right - sendMouseLocWhenIdleBox.Left;
       othersPanel.Controls.Add(sendMouseLocWhenIdleBox);
-      turnOffMouseAccelBox.Text = App.GetStr("Turn off mouse acceleration");
-      turnOffMouseAccelBox.Location = new Point(App.DialogSpacing, sendMouseLocWhenIdleBox.Bottom + App.DialogSpacing);
-      turnOffMouseAccelBox.Width = othersPanel.ClientRectangle.Right - turnOffMouseAccelBox.Left;
-      othersPanel.Controls.Add(turnOffMouseAccelBox);
+      mouseSpeedBox.Location = new Point(App.DialogSpacing, sendMouseLocWhenIdleBox.Bottom + App.DialogSpacing);
+      mouseSpeedBox.Width = othersPanel.ClientRectangle.Right - App.DialogSpacing - mouseSpeedBox.Left;
+      othersPanel.Controls.Add(mouseSpeedBox);
 
       graphics.Dispose();
 

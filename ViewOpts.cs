@@ -73,6 +73,13 @@ namespace Vnc.Viewer
     Asap
   }
 
+  internal enum MouseSpeed
+  {
+    Low,
+    Normal,
+    High
+  }
+
   /// <remarks>This class is responsible for loading and saving view options.</remarks>
   internal class ViewOpts
   {
@@ -110,7 +117,11 @@ namespace Vnc.Viewer
     private const string BatchName = "Batch";
     private const string AsapName = "Asap";
     private const string SendMouseLocWhenIdleName = "SendMouseLocationWhenIdle";
-    private const string TurnOffMouseAccelName = "TurnOffMouseAccel";
+    private const string MouseAccelModeName= "MouseAccelMode";
+    private const string MouseSpeedName = "MouseSpeed";
+    private const string LowName = "Low";
+    private const string NormalName = "Normal";
+    private const string HighName = "High";
 
     internal PixelSize PixelSize = PixelSize.Force8Bit;
     internal bool IsFullScrn = false;
@@ -123,7 +134,8 @@ namespace Vnc.Viewer
     internal bool ViewOnly = false;
     internal ScrnUpdAlgo ScrnUpdAlgo = ScrnUpdAlgo.Batch;
     internal bool SendMouseLocWhenIdle = false;
-    internal bool TurnOffMouseAccel = false;
+    internal bool MouseAccelMode = true;
+    internal MouseSpeed MouseSpeed = MouseSpeed.Normal;
 
     internal ViewOpts()
     {
@@ -280,8 +292,20 @@ namespace Vnc.Viewer
       elem.InnerText = SendMouseLocWhenIdle.ToString();
       rootElem.AppendChild(elem);
 
-      elem = doc.CreateElement(TurnOffMouseAccelName);
-      elem.InnerText = TurnOffMouseAccel.ToString();
+      elem = doc.CreateElement(MouseAccelModeName);
+      elem.InnerText = MouseAccelMode.ToString();
+      switch(MouseSpeed)
+      {
+        case MouseSpeed.Low:
+          elem.SetAttribute(MouseSpeedName, LowName);
+          break;
+        case MouseSpeed.High:
+          elem.SetAttribute(MouseSpeedName, HighName);
+          break;
+        default:
+          elem.SetAttribute(MouseSpeedName, NormalName);
+          break;
+      }
       rootElem.AppendChild(elem);
     }
 
@@ -500,14 +524,11 @@ namespace Vnc.Viewer
       {
         elemExists = false;
       }
-      if(elemExists)
-        SendMouseLocWhenIdle = Boolean.Parse(elem.InnerText);
-      else
-        SendMouseLocWhenIdle = false;
+      SendMouseLocWhenIdle = elemExists? Boolean.Parse(elem.InnerText) : false;
 
       try
       {
-        elem = FindXmlElem(doc, rootElem, TurnOffMouseAccelName);
+        elem = FindXmlElem(doc, rootElem, MouseAccelModeName);
         elemExists = true;
       }
       catch(FormatException)
@@ -515,9 +536,43 @@ namespace Vnc.Viewer
         elemExists = false;
       }
       if(elemExists)
-        TurnOffMouseAccel = Boolean.Parse(elem.InnerText);
+      {
+        MouseAccelMode = Boolean.Parse(elem.InnerText);
+        try
+        {
+          switch(elem.GetAttribute(MouseSpeedName))
+          {
+            case LowName:
+              MouseSpeed = MouseSpeed.Low;
+              break;
+            case NormalName:
+              MouseSpeed = MouseSpeed.Normal;
+              break;
+            case HighName:
+              MouseSpeed = MouseSpeed.High;
+              break;
+            default:
+              throw new FormatException();
+          }
+        }
+        catch(ArgumentNullException)
+        {
+          throw new FormatException("Mouse speed setting is invalid.");
+        }
+        catch(OverflowException)
+        {
+          throw new FormatException("Mouse speed scaling setting is invalid.");
+        }
+        catch(FormatException)
+        {
+          throw new FormatException("Mouse speed scaling setting is invalid.");
+        }
+      }
       else
-        TurnOffMouseAccel = false;
+      {
+        MouseAccelMode = true;
+        MouseSpeed = MouseSpeed.Normal;
+      }
     }
   }
 }

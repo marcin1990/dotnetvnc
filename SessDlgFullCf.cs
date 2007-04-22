@@ -201,7 +201,7 @@ namespace Vnc.Viewer
       passwdBox.Width = generalPage.ClientRectangle.Right - App.DialogSpacing - passwdBox.Left;
       recentBox.Width = generalPage.ClientRectangle.Right - App.DialogSpacing - recentBox.Left;
       recentBox.Height = generalPage.ClientRectangle.Bottom - App.DialogSpacing - recentBox.Top;
-      listenBox.Width = connModePage.ClientRectangle.Right - listenBox.Width;
+      listenBox.Width = connModePage.ClientRectangle.Right - listenBox.Left;
       listenPortBox.Width = connModePage.ClientRectangle.Right - App.DialogSpacing - listenPortBox.Left;
       rotateBox.Width = displayPage.ClientRectangle.Right - App.DialogSpacing - rotateBox.Left;
       pixelSizeBox.Width = displayPage.ClientRectangle.Right - App.DialogSpacing - pixelSizeBox.Left;

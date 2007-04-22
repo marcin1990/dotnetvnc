@@ -33,6 +33,9 @@ namespace Vnc.Viewer
     private const byte CursorDelta = 100; // TODO: Find an optimal value.
     private const UInt16 InputDelta = 5000; // TODO: Find an optimal value.
     private const UInt16 MouseIdleDelta = 1000; // TODO: Find an optimal value.
+    private const UInt16 LowSpeed = 3; // TODO: Find an optimal value.
+    private const UInt16 NormalSpeed = 5; // TODO: Find an optimal value.
+    private const UInt16 HighSpeed = 7; // TODO: Find an optimal value.
 
     private Timer cursorTimer = new Timer();
     private int xSpeed = 0;
@@ -42,6 +45,9 @@ namespace Vnc.Viewer
     private TextBox inputBox = new TextBox();
 
     private Timer mouseIdleTimer = new Timer();
+
+    private MenuItem mouseAccelModeMenu = new MenuItem();
+    private EventHandler mouseAccelModeHdr = null;
 
     [DllImport("coredll.dll")]
     private static extern short GetKeyState(int keyCode);
@@ -208,28 +214,80 @@ namespace Vnc.Viewer
           tapHoldCnt = 0;
           break;
         case Keys.Up:
-          if(connOpts.ViewOpts.TurnOffMouseAccel) // TODO: Make the speed configurable.
-            ySpeed = -5; // Absolute value of speed must be > 1 for the mouse to actually move
+          if(connOpts.ViewOpts.MouseAccelMode)
+            ySpeed -= LowSpeed;
           else
-            ySpeed -= 3;
+          {
+            switch(connOpts.ViewOpts.MouseSpeed)
+            {
+              case MouseSpeed.Low:
+                ySpeed = -LowSpeed;
+                break;
+              case MouseSpeed.High:
+                ySpeed = -HighSpeed;
+                break;
+              default:
+                ySpeed = -NormalSpeed;
+                break;
+            }
+          }
           break;
         case Keys.Down:
-          if(connOpts.ViewOpts.TurnOffMouseAccel) // TODO: Make the speed configurable.
-            ySpeed = 5; // Absolute value of speed must be > 1 for the mouse to actually move
+          if(connOpts.ViewOpts.MouseAccelMode)
+            ySpeed += LowSpeed;
           else
-            ySpeed += 3;
+          {
+            switch(connOpts.ViewOpts.MouseSpeed)
+            {
+              case MouseSpeed.Low:
+                ySpeed = LowSpeed;
+                break;
+              case MouseSpeed.High:
+                ySpeed = HighSpeed;
+                break;
+              default:
+                ySpeed = NormalSpeed;
+                break;
+            }
+          }
           break;
         case Keys.Left:
-          if(connOpts.ViewOpts.TurnOffMouseAccel) // TODO: Make the speed configurable.
-            xSpeed = -5; // Absolute value of speed must be > 1 for the mouse to actually move
+          if(connOpts.ViewOpts.MouseAccelMode)
+            xSpeed -= LowSpeed;
           else
-            xSpeed -= 3;
+          {
+            switch(connOpts.ViewOpts.MouseSpeed)
+            {
+              case MouseSpeed.Low:
+                xSpeed = -LowSpeed;
+                break;
+              case MouseSpeed.High:
+                xSpeed = -HighSpeed;
+                break;
+              default:
+                xSpeed = -NormalSpeed;
+                break;
+            }
+          }
           break;
         case Keys.Right:
-          if(connOpts.ViewOpts.TurnOffMouseAccel) // TODO: Make the speed configurable.
-            xSpeed = 5; // Absolute value of speed must be > 1 for the mouse to actually move
+          if(connOpts.ViewOpts.MouseAccelMode)
+            xSpeed += LowSpeed;
           else
-            xSpeed += 3;
+          {
+            switch(connOpts.ViewOpts.MouseSpeed)
+            {
+              case MouseSpeed.Low:
+                xSpeed = LowSpeed;
+                break;
+              case MouseSpeed.High:
+                xSpeed = HighSpeed;
+                break;
+              default:
+                xSpeed = NormalSpeed;
+                break;
+            }
+          }
           break;
         case Keys.F8:
           inputTimer.Enabled = true;
@@ -385,14 +443,31 @@ namespace Vnc.Viewer
         mouseIdleTimer.Enabled = false;
     }
 
-    private void TurnOffMouseAccelClicked(object sender, EventArgs e)
+    private void MouseAccelModeClicked(object sender, EventArgs e)
     {
-      connOpts.ViewOpts.TurnOffMouseAccel = !connOpts.ViewOpts.TurnOffMouseAccel;
-      for(int i = 0; i < optionsMenu.MenuItems.Count; i++)
+      for(int i = 0; i < mouseAccelModeMenu.MenuItems.Count; i++)
+        mouseAccelModeMenu.MenuItems[i].Checked = false;
+      MenuItem item = (MenuItem)sender;
+      item.Checked = true;
+      if(item == mouseAccelModeMenu.MenuItems[0])
       {
-        MenuItem item = optionsMenu.MenuItems[i];
-        if(item.Text == App.GetStr("Turn off mouse acceleration"))
-          item.Checked = connOpts.ViewOpts.TurnOffMouseAccel;
+        connOpts.ViewOpts.MouseAccelMode = true;
+        connOpts.ViewOpts.MouseSpeed = MouseSpeed.Normal;
+      }
+      else if(item == mouseAccelModeMenu.MenuItems[1])
+      {
+        connOpts.ViewOpts.MouseAccelMode = false;
+        connOpts.ViewOpts.MouseSpeed = MouseSpeed.Low;
+      }
+      else if(item == mouseAccelModeMenu.MenuItems[2])
+      {
+        connOpts.ViewOpts.MouseAccelMode = false;
+        connOpts.ViewOpts.MouseSpeed = MouseSpeed.Normal;
+      }
+      else if(item == mouseAccelModeMenu.MenuItems[3])
+      {
+        connOpts.ViewOpts.MouseAccelMode = false;
+        connOpts.ViewOpts.MouseSpeed = MouseSpeed.High;
       }
     }
 
@@ -424,6 +499,8 @@ namespace Vnc.Viewer
 
     internal ViewSp(Conn conn, ConnOpts connOpts, UInt16 width, UInt16 height) : base(conn, connOpts, width, height)
     {
+      mouseAccelModeHdr = new EventHandler(MouseAccelModeClicked);
+
       MenuItem item;
       MenuItem subItem;
 
@@ -453,11 +530,28 @@ namespace Vnc.Viewer
       subItem.Checked = connOpts.ViewOpts.SendMouseLocWhenIdle;
       subItem.Click += new EventHandler(SendMouseLocWhenIdleClicked);
       optionsMenu.MenuItems.Add(subItem);
+      mouseAccelModeMenu.Text = App.GetStr("Mouse speed");
+      optionsMenu.MenuItems.Add(mouseAccelModeMenu);
       subItem = new MenuItem();
-      subItem.Text = App.GetStr("Turn off mouse acceleration");
-      subItem.Checked = connOpts.ViewOpts.TurnOffMouseAccel;
-      subItem.Click += new EventHandler(TurnOffMouseAccelClicked);
-      optionsMenu.MenuItems.Add(subItem);
+      subItem.Text = App.GetStr("Acceleration on");
+      subItem.Checked = connOpts.ViewOpts.MouseAccelMode;
+      subItem.Click += mouseAccelModeHdr;
+      mouseAccelModeMenu.MenuItems.Add(subItem);
+      subItem = new MenuItem();
+      subItem.Text = App.GetStr("Low");
+      subItem.Checked = !connOpts.ViewOpts.MouseAccelMode && (connOpts.ViewOpts.MouseSpeed == MouseSpeed.Low);
+      subItem.Click += mouseAccelModeHdr;
+      mouseAccelModeMenu.MenuItems.Add(subItem);
+      subItem = new MenuItem();
+      subItem.Text = App.GetStr("Normal");
+      subItem.Checked = !connOpts.ViewOpts.MouseAccelMode && (connOpts.ViewOpts.MouseSpeed == MouseSpeed.Normal);
+      subItem.Click += mouseAccelModeHdr;
+      mouseAccelModeMenu.MenuItems.Add(subItem);
+      subItem = new MenuItem();
+      subItem.Text = App.GetStr("High");
+      subItem.Checked = !connOpts.ViewOpts.MouseAccelMode && (connOpts.ViewOpts.MouseSpeed == MouseSpeed.High);
+      subItem.Click += mouseAccelModeHdr;
+      mouseAccelModeMenu.MenuItems.Add(subItem);
       subItem = new MenuItem();
       subItem.Text = "-";
       item.MenuItems.Add(subItem);
