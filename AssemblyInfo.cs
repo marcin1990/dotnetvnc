@@ -1,4 +1,4 @@
-//  Copyright (C) 2004-2005 Rocky Lo. All Rights Reserved.
+//  Copyright (C) 2004-2005, 2007 Rocky Lo. All Rights Reserved.
 //
 //  This file is part of the VNC system.
 //
@@ -23,10 +23,10 @@
 
 using System.Reflection;
 
-[assembly:AssemblyInformationalVersion("1.0.1.16")]
-[assembly:AssemblyVersion("1.0.1.16")]
+[assembly:AssemblyInformationalVersion("1.0.1.17")]
+[assembly:AssemblyVersion("1.0.1.17")]
 [assembly:AssemblyDescription("VNC Viewer on .NET Framework")]
 [assembly:AssemblyCompany("Rocky Lo")]
 [assembly:AssemblyTitle(".NET VNC Viewer")]
-[assembly:AssemblyCopyright("Copyright (C) 2004-2005 Rocky Lo. Copyright (C) 2002 Ultr@VNC Team Members. Copyright (C) 2000-2002 Const Kaplinsky. Copyright (C) 2002 RealVNC Ltd. Copyright (C) 1999 AT&T Laboratories Cambridge.")]
+[assembly:AssemblyCopyright("Copyright (C) 2004-2005, 2007 Rocky Lo. Copyright (C) 2002 Ultr@VNC Team Members. Copyright (C) 2000-2002 Const Kaplinsky. Copyright (C) 2002 RealVNC Ltd. Copyright (C) 1999 AT&T Laboratories Cambridge.")]
 [assembly:AssemblyProduct(".NET VNC Viewer")]

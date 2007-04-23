@@ -16,12 +16,13 @@ Features
 -Server-side scaling and single window mode.
 -Session history.
 -Hi-Res support for VGA Pocket PC and QVGA Smartphones.
+-Listen mode.
 -etc.
 
 Requirements
 ============
 It works on the following devices:
--It should work on all Windows desktops with .NET Framework 1.1 (or later). I only tested it on my workstation with Windows XP Professional, however.
+-It should work on all Windows desktops with .NET Framework 1.1 (or later). I only tested it on my workstation with Windows XP Home and Professional, however.
 -It should work on all Pocket PCs with .NET Compact Framework 1.0 (or later). I only tested it on my HP 4150 with Windows Mobile 2003 though.
 -It should work on all Smartphones with .NET Compact Framework 1.0 (or later). I only tested it with an emulator.
 -It should work on other Windows CE devices with .NET Compact Framework 1.0 installed. I haven't tested with any.
@@ -35,7 +36,7 @@ Just copy the exe to a directory on your device and execute from there.
 Execution
 =========
 vncviewer.exe [vncxml file]
-	[vncxml file] is an xml file created by .NET VNC Viewer. It contains the details for .NET VNC Viewer to initiate a connection to a VNC server.
+	[vncxml file] is an xml file created by .NET VNC Viewer. It contains the details for .NET VNC Viewer to initiate / wait for a connection to/from a VNC server.
 
 Usage
 =====
@@ -63,6 +64,13 @@ Comments on C# and .NET (Compact) Framework
 
 History
 =======
+1.0.1.17 (Apr 24, 2007)
+-Implemented listen mode.
+-Added an option for Smartphone users to turn off mouse acceleration.
+-Added an option for Smartphone users to choose the mouse speed after turning off mouse acceleration.
+-For Smartphones with a QWERTY keyboard, now the lower case "p" and "q" keys should work as expected.
+-More keys were added to the Keys menu (Esc, Tab, and Fn keys).
+-Avoided an exception for some .NET CF devices with no connection manager.
 1.0.1.16 (Apr 24, 2005)
 -Server-side scaling and single window mode implemented.
 -On a PPC or a Smartphone, now the viewer calls into the connection manager to initiate a network connection (e.g. GPRS) before connecting to the server. From now on the viewer is not P/Invoke-free anymore.
@@ -93,8 +101,9 @@ History
 
 TODOs
 =====
--Status reporting.
+-UltraVNC proxy support.
 -ZRLE encoding.
+-Status reporting.
 -etc.
 
 References

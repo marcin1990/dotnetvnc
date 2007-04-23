@@ -1,4 +1,4 @@
-//  Copyright (C) 2004-2005 Rocky Lo. All Rights Reserved.
+//  Copyright (C) 2004-2005, 2007 Rocky Lo. All Rights Reserved.
 //  Copyright (C) 2002 Ultr@VNC Team Members. All Rights Reserved.
 //  Copyright (C) 1999 AT&T Laboratories Cambridge. All Rights Reserved.
 //
@@ -110,10 +110,10 @@ namespace Vnc.Viewer
     internal static void AboutBox()
     {
       MessageBox.Show(App.GetStr(@"
-.NET VNC Viewer 1.0.1.16
-Apr 24, 2005
+.NET VNC Viewer 1.0.1.17
+Apr 24, 2007
 
-Copyright (C) 2004-2005 Rocky Lo. All Rights Reserved.
+Copyright (C) 2004-2005, 2007 Rocky Lo. All Rights Reserved.
 Copyright (C) 2002 Ultr@VNC Team Members. All Rights Reserved.
 Copyright (C) 2000-2002 Const Kaplinsky. All Rights Reserved.
 Copyright (C) 2002 RealVNC Ltd. All Rights Reserved.
