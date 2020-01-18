@@ -61,6 +61,9 @@ namespace Vnc.Viewer
 
     /// <summary>This determines where the connection history is stored.</summary>
     internal static readonly string ConnHistFileName;
+	
+	/// <summary>This determines where the autostart config is stored.</summary>
+    internal static readonly string AutostartFileName;
 
     /// <summary>This table stores all the system messages.</summary>
     // TODO: Implement this.
@@ -79,6 +82,7 @@ namespace Vnc.Viewer
       String fullAppPath = Path.GetDirectoryName(fullAppName);
       SettingsFileName = Path.Combine(fullAppPath, "settings.xml");
       ConnHistFileName = Path.Combine(fullAppPath, "history.xml");
+	  AutostartFileName = Path.Combine(fullAppPath, "autostart.vncxml");
 
       // This ensures that we can run on both desktop and PPC.
       // On a desktop there is a prefix "file:\" and XmlDocument.Save does not like it.
@@ -86,6 +90,8 @@ namespace Vnc.Viewer
         SettingsFileName = SettingsFileName.Substring(6);
       if(ConnHistFileName.StartsWith("file:\\"))
         ConnHistFileName = ConnHistFileName.Substring(6);
+	  if(AutostartFileName.StartsWith("file:\\"))
+        AutostartFileName = AutostartFileName.Substring(6);
     }
 
     internal static string GetStr(string key)
@@ -226,6 +232,8 @@ Copyright (C) 1999 AT&T Laboratories Cambridge. All Rights Reserved.
 
       if(isVncFileSpec)
         NewConn(vncFileName);
+	  else if(File.Exists(App.AutostartFileName))
+		NewConn(App.AutostartFileName); 
       else
       {
         if(DevCap.Lvl >= DevCapLvl.Desktop)
