@@ -79,7 +79,20 @@ namespace Vnc.Viewer
     static App()
     {
       String fullAppName = Assembly.GetExecutingAssembly().GetName().CodeBase;
-      String fullAppPath = Path.GetDirectoryName(fullAppName);
+	  
+	    bool file_prefix = fullAppName.StartsWith("file://");
+        if(file_prefix) {
+            // Is Windows Desktop or Unix
+            // Now, skipping off the "file://" prefix.
+            fullAppName = fullAppName.Substring(7);
+        }
+ 	  String fullAppPath = Path.GetDirectoryName(fullAppName);
+       
+        if(file_prefix && fullAppPath.StartsWith("\\")) {
+            // Is Windows Desktop
+            fullAppPath = fullAppPath.Substring(1);
+        }
+
       SettingsFileName = Path.Combine(fullAppPath, "settings.xml");
       ConnHistFileName = Path.Combine(fullAppPath, "history.xml");
 	  AutostartFileName = Path.Combine(fullAppPath, "autostart.vncxml");
