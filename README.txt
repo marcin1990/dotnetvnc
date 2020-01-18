@@ -29,6 +29,8 @@ It works on the following devices:
 
 It may or may not work on previous versions of .NET Framework.
 
+There is possibility to run application using Mono at Linux/Unix systems but due to differences in Compact Framework libraries it should be only a desktop build described in BUILDING.TXT.
+
 Installation
 ============
 Just copy the exe to a directory on your device and execute from there.
@@ -64,6 +66,10 @@ Comments on C# and .NET (Compact) Framework
 
 History
 =======
+1.0.1.18 (Jan 19, 2020)
+-Moving project from CVS repository (Sourceforge) to Git (Github).
+-Added feature that will start connection automatically when file 'autostart.vncxml' is present next to application binary file.
+-Mono Linux/Unix support due to changes in file path handling.
 1.0.1.17 (Apr 24, 2007)
 -Implemented listen mode.
 -Added an option for Smartphone users to turn off mouse acceleration.

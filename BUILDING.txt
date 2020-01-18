@@ -19,7 +19,9 @@ On a Windows desktop (exe runs on both desktop, PPC, and Smartphone)
 ====================================================================
 If binary compatibility is desired when building on desktop, follow the following steps:
 1) Install .NET Framework SDK 1.1.
-2) Copy the .NET Compact Framework DLLs to a directory on the desktop. You can obtain the DLLs from various sources. For example, you can copy the DLLs from a Pocket C# distribution or an installed .NET Compact Framework SDK. These files are:
+2) Copy the .NET Compact Framework DLLs to a directory on the desktop. You can obtain the DLLs from various sources. For example, you can copy the DLLs from a Pocket C# distribution, installed .NET Compact Framework SDK or from MSDN Visual Studio NET 2003 Enterprise Architect (Disc 2)(Disc 2083)(May 2003)(X09 51499) https://archive.org/details/MSDN_Visual_Studio_NET_2003_Enterprise_Architect_Disc_2_Disc_2083_May_2003_X09-5
+Path: VISUAL-STUDIO-DISK:\Program Files\Microsoft Visual Studio .NET 2003\CompactFrameworkSDK\v1.0.5000\WindowsCE\
+These files are:
 	Microsoft.WindowsCE.Forms.dll
 	mscorlib.dll
 	System.Data.dll

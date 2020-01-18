@@ -129,9 +129,10 @@ namespace Vnc.Viewer
     internal static void AboutBox()
     {
       MessageBox.Show(App.GetStr(@"
-.NET VNC Viewer 1.0.1.17
-Apr 24, 2007
+.NET VNC Viewer 1.0.1.18
+Jan 18, 2020
 
+Copyright (C) 2020 marcin1990. All Rights Reserved.
 Copyright (C) 2004-2005, 2007 Rocky Lo. All Rights Reserved.
 Copyright (C) 2002 Ultr@VNC Team Members. All Rights Reserved.
 Copyright (C) 2000-2002 Const Kaplinsky. All Rights Reserved.

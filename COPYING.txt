@@ -1,3 +1,4 @@
+//  Copyright (C) 2020 marcin1990. All Rights Reserved.
 //  Copyright (C) 2004-2005, 2007 Rocky Lo. All Rights Reserved.
 //  Copyright (C) 1999 AT&T Laboratories Cambridge. All Rights Reserved.
 //
