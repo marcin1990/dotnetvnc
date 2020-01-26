@@ -1,0 +1,40 @@
+Changelog
+=======
+1.0.1.18 (Jan 19, 2020)
+-Moving project from CVS repository (Sourceforge) to Git (Github).
+-Added feature that will start connection automatically when file 'autostart.vncxml' is present next to application binary file.
+-Mono Linux/Unix support due to changes in file path handling.
+1.0.1.17 (Apr 24, 2007)
+-Implemented listen mode.
+-Added an option for Smartphone users to turn off mouse acceleration.
+-Added an option for Smartphone users to choose the mouse speed after turning off mouse acceleration.
+-For Smartphones with a QWERTY keyboard, now the lower case "p" and "q" keys should work as expected.
+-More keys were added to the Keys menu (Esc, Tab, and Fn keys).
+-Avoided an exception for some .NET CF devices with no connection manager.
+1.0.1.16 (Apr 24, 2005)
+-Server-side scaling and single window mode implemented.
+-On a PPC or a Smartphone, now the viewer calls into the connection manager to initiate a network connection (e.g. GPRS) before connecting to the server. From now on the viewer is not P/Invoke-free anymore.
+-Added an icon.
+-Added an option for users to choose whether to update the screen ASAP or in a batch.
+-Added a sample build script.
+-Fixed a bug that would hang the viewer if the connection is terminated unexpectedly.
+1.0.1.10 (Mar 22, 2005)
+-Client-side scaling implemented.
+-Fixed a problem with Smartphone key input mode which prevents the viewer from going back to mouse mode after exiting extended input mode.
+-For Smartphones, the back soft key is now backspace even not in key input mode.
+-Improved the code for painting.
+-Made adjustments to thread priority to provide a more responsive UI.
+-Added "Shift Down" and "Shift Up" to the "Keys" menu.
+-For Smartphones, added an option to send the mouse location to the server when the cursor is idle.
+-Fixed a bug on Smartphones that would cause the right mouse button to not properly function after exiting full screen mode.
+1.0.1 (Feb 27, 2005)
+-Smartphone support.
+-Hi-Res support for VGA Pocket PCs and QVGA Smartphones.
+-Better full screen support (remote desktop centered with black background).
+-Better desktop support (intuitive right click handling).
+-Workaround for a bug in .NET CF prior to SP3 that hangs the viewer upon exit.
+-Workaround for a bug in .NET CF prior to SP3 that crashes the viewer when the server terminates the connection.
+-Other cosmetic changes.
+-Merged content of TODO.txt and HISTORY.txt into README.txt. README.txt was revised.
+1.0.0 (Jan 19, 2005)
+-Initial release.
